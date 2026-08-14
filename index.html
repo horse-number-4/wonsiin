@@ -1,0 +1,1135 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d1117">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="원시인">
+<title>원시인 — 사격제원 계산기</title>
+<style>
+:root{
+  --bg:#0d1117; --panel:#161b22; --panel2:#1c2430; --line:#2a3441;
+  --fg:#e6edf3; --dim:#8b98a5; --accent:#4c9aff; --accent2:#3fb950;
+  --warn:#d29922; --bad:#f85149;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+html.night{
+  --bg:#000; --panel:#0a0000; --panel2:#140202; --line:#3a0d0d;
+  --fg:#ff5c47; --dim:#a83526; --accent:#ff7a5c; --accent2:#ff5c47;
+  --warn:#ff7a5c; --bad:#ff5c47;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard",system-ui,sans-serif;
+  font-size:15px;line-height:1.5;-webkit-text-size-adjust:100%;
+  padding-bottom:env(safe-area-inset-bottom)}
+.wrap{max-width:880px;margin:0 auto;padding:0 12px 60px}
+
+header{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--line)}
+.hrow{display:flex;align-items:center;gap:10px;padding:10px 2px 8px}
+.hrow h1{font-size:16px;margin:0;font-weight:650;letter-spacing:-.01em}
+.hrow .sp{flex:1}
+.night-btn{background:var(--panel);border:1px solid var(--line);color:var(--dim);
+  border-radius:7px;padding:6px 10px;font-size:12px;cursor:pointer;font-family:inherit}
+.tabs{display:flex;gap:2px}
+.tabs button{background:none;border:none;border-bottom:2px solid transparent;color:var(--dim);
+  padding:9px 14px;font-size:14px;font-family:inherit;cursor:pointer;font-weight:600}
+.tabs button.on{color:var(--fg);border-bottom-color:var(--accent)}
+.page{display:none;padding-top:14px}
+.page.on{display:block}
+.mscreen{display:none}
+.mscreen.on{display:block}
+
+section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+section > h2{font-size:12px;margin:0 0 12px;color:var(--dim);font-weight:600;
+  letter-spacing:.08em;text-transform:uppercase}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.grid.g2{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.grid.g3{grid-template-columns:repeat(auto-fit,minmax(112px,1fr))}
+.f{display:flex;flex-direction:column;gap:5px;min-width:0}
+.f label{font-size:12px;color:var(--dim);display:flex;gap:5px;align-items:baseline}
+.f label .u{font-size:11px;opacity:.65}
+input,select,textarea{background:var(--panel2);border:1px solid var(--line);color:var(--fg);
+  border-radius:8px;padding:9px 10px;font-size:16px;font-family:var(--mono);width:100%;min-width:0}
+select{font-family:inherit;font-size:14px}
+textarea{font-size:14px;line-height:1.7;resize:vertical;min-height:150px;white-space:pre}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+input[type=checkbox]{width:auto;accent-color:var(--accent)}
+.row-chk{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);cursor:pointer}
+.row-chk input{margin:0}
+
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+button.act{background:var(--accent);border:none;color:#04121f;border-radius:9px;
+  padding:12px 18px;font-size:15px;font-weight:650;cursor:pointer;font-family:inherit;flex:1}
+button.ghost{background:var(--panel2);border:1px solid var(--line);color:var(--fg);
+  border-radius:9px;padding:11px 14px;font-size:14px;cursor:pointer;font-family:inherit}
+button:active{opacity:.75}
+
+/* 메뉴 */
+.menu{display:flex;flex-direction:column;gap:8px}
+.menu button{display:flex;align-items:center;gap:12px;text-align:left;width:100%;
+  background:var(--panel2);border:1px solid var(--line);border-radius:10px;
+  padding:13px 14px;cursor:pointer;font-family:inherit;color:var(--fg)}
+.menu button:active{border-color:var(--accent)}
+.menu .n{width:30px;height:30px;flex:none;border-radius:8px;background:var(--accent);color:#04121f;
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px}
+.menu .n.alt{background:var(--panel);color:var(--dim);border:1px solid var(--line)}
+.menu .tx{flex:1;min-width:0}
+.menu .t{display:block;font-size:15px;font-weight:600}
+.menu .d{display:block;font-size:12px;color:var(--dim);margin-top:2px;line-height:1.4}
+.menu .ar{color:var(--dim);font-size:16px;flex:none}
+
+/* 화면 헤더 */
+.mhead{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.mhead button{background:var(--panel2);border:1px solid var(--line);color:var(--fg);
+  border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer;font-family:inherit;flex:none}
+.mhead h3{margin:0;font-size:15px;flex:1;font-weight:650}
+.mhead .step{font-size:11px;color:var(--dim);border:1px solid var(--line);
+  border-radius:20px;padding:3px 9px;flex:none}
+
+/* 결과 */
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));
+  gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.summary div{background:var(--panel);padding:9px 10px}
+.summary .k{font-size:10.5px;color:var(--dim);letter-spacing:.04em}
+.summary .v{font-size:15px;font-family:var(--mono);margin-top:2px}
+
+.fire{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;
+  background:var(--line);border:1px solid var(--accent);border-radius:12px;overflow:hidden;margin-bottom:12px}
+.fire div{background:var(--panel2);padding:13px 10px;text-align:center}
+.fire .k{font-size:11px;color:var(--dim);letter-spacing:.06em}
+.fire .v{font-size:29px;font-family:var(--mono);font-weight:600;margin-top:2px;
+  color:var(--accent2);letter-spacing:-.02em;line-height:1.15}
+.fire .v.sm{font-size:15px;padding:7px 0}
+.fire .s{font-size:11px;color:var(--dim)}
+
+.tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-family:var(--mono);font-size:13px;white-space:nowrap}
+thead th{background:var(--panel2);color:var(--dim);font-size:10.5px;font-weight:600;
+  padding:8px 9px;text-align:right;position:sticky;top:0;letter-spacing:.03em;border-bottom:1px solid var(--line)}
+thead th:first-child{text-align:left}
+tbody td{padding:7px 9px;text-align:right;border-bottom:1px solid var(--line)}
+tbody td:first-child{text-align:left;color:var(--accent);font-weight:600}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:nth-child(even) td{background:rgba(255,255,255,.017)}
+html.night tbody tr:nth-child(even) td{background:rgba(255,80,60,.05)}
+td.sub{color:var(--dim)}
+tr.zero td{background:rgba(76,154,255,.1)!important}
+tr.subsonic td:first-child::after{content:" ·";color:var(--warn)}
+
+.note{font-size:12px;color:var(--dim);line-height:1.65;margin-top:10px}
+.note b{color:var(--fg);font-weight:600}
+.err{color:var(--bad);font-size:13px;margin-top:8px;font-weight:600}
+.ok{color:var(--accent2);font-size:12px;margin-top:8px}
+.pill{display:inline-block;background:var(--panel2);border:1px solid var(--line);
+  border-radius:20px;padding:2px 9px;font-size:11px;color:var(--dim);margin-right:5px}
+.warnbox{background:rgba(210,153,34,.09);border:1px solid rgba(210,153,34,.35);
+  border-radius:9px;padding:10px 12px;font-size:12.5px;line-height:1.6;color:var(--fg);margin-top:10px}
+html.night .warnbox{background:rgba(255,120,90,.08);border-color:rgba(255,120,90,.35)}
+.formula{font-family:var(--mono);font-size:11.5px;color:var(--dim);
+  background:var(--panel2);border-left:2px solid var(--line);
+  padding:8px 10px;border-radius:0 6px 6px 0;margin-top:10px;line-height:1.7;
+  overflow-x:auto;white-space:pre}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="hrow">
+    <h1>사격제원 계산기</h1><span class="pill" id="ver">v1.3</span><span class="sp"></span>
+    <button class="night-btn" id="btnNight">야간</button>
+  </div>
+  <div class="tabs">
+    <button data-p="mortar" class="on">박격포</button>
+    <button data-p="sniper">저격</button>
+    <button data-p="tools">도구</button>
+  </div>
+</header>
+
+<!-- ══════════════ 박격포 ══════════════ -->
+<div class="page on" id="p-mortar">
+
+  <!-- ── 메뉴 ── -->
+  <div class="mscreen on" id="m-menu">
+    <section>
+      <h2>표적 위치 결정</h2>
+      <div class="menu">
+        <button data-go="m-grid"><span class="n">1</span><span class="tx">
+          <span class="t">방안좌표법</span><span class="d">포대·표적 좌표를 둘 다 아는 경우</span></span><span class="ar">›</span></button>
+        <button data-go="m-polar"><span class="n">2</span><span class="tx">
+          <span class="t">극표정법</span><span class="d">관측소에서 방위각·거리로 관측한 경우</span></span><span class="ar">›</span></button>
+        <button data-go="m-shift"><span class="n">3</span><span class="tx">
+          <span class="t">기록점전이법</span><span class="d">기록점 기준 편향·거리증감으로 전이</span></span><span class="ar">›</span></button>
+      </div>
+      <div class="note">세 방법 모두 <b>표적 좌표 → 수평거리·표고차·사격방위각 → 사표 → 편각·고각</b> 순서로 이어집니다.</div>
+    </section>
+    <section>
+      <h2>수정 사격</h2>
+      <div class="menu">
+        <button data-go="m-adjust"><span class="n">4</span><span class="tx">
+          <span class="t">관측자 수정</span><span class="d">초탄 관측 후 「우 50, 증 100」 같은 수정을 반영</span></span><span class="ar">›</span></button>
+      </div>
+    </section>
+    <section>
+      <h2>설정</h2>
+      <div class="menu">
+        <button data-go="m-table"><span class="n alt">표</span><span class="tx">
+          <span class="t">사표 · 사격지휘 설정</span><span class="d" id="tblStatus">사표 미등록 — 편각·고각이 나오려면 필요합니다</span></span><span class="ar">›</span></button>
+      </div>
+    </section>
+  </div>
+
+  <!-- ── 1. 방안좌표법 ── -->
+  <div class="mscreen" id="m-grid">
+    <div class="mhead"><button data-back>‹ 뒤로</button><h3>방안좌표법</h3><span class="step">1 / 3</span></div>
+    <section>
+      <h2>포대 (M) 제원</h2>
+      <div class="grid g3">
+        <div class="f"><label>X <span class="u">동서</span></label><input id="q1mx" inputmode="numeric" value="12300"></div>
+        <div class="f"><label>Y <span class="u">남북</span></label><input id="q1my" inputmode="numeric" value="45600"></div>
+        <div class="f"><label>표고 <span class="u">m</span></label><input id="q1mh" type="number" inputmode="decimal" value="100"></div>
+      </div>
+    </section>
+    <section>
+      <h2>표적 (T) 제원</h2>
+      <div class="grid g3">
+        <div class="f"><label>X <span class="u">동서</span></label><input id="q1tx" inputmode="numeric" value="14500"></div>
+        <div class="f"><label>Y <span class="u">남북</span></label><input id="q1ty" inputmode="numeric" value="48900"></div>
+        <div class="f"><label>표고 <span class="u">m</span></label><input id="q1th" type="number" inputmode="decimal" value="150"></div>
+      </div>
+      <div class="btnrow"><button class="act" data-calc="1">결과 산출</button></div>
+      <div class="err" id="q1err"></div>
+      <div class="formula">수평거리 = √(ΔX² + ΔY²)
+사격방위각 = atan2(ΔX, ΔY) × 6400 / 2π
+표고차 = 표적표고 − 포대표고</div>
+    </section>
+    <div id="q1out"></div>
+  </div>
+
+  <!-- ── 2. 극표정법 ── -->
+  <div class="mscreen" id="m-polar">
+    <div class="mhead"><button data-back>‹ 뒤로</button><h3>극표정법</h3><span class="step">2 / 3</span></div>
+    <section>
+      <h2>관측소 (OP) 제원</h2>
+      <div class="grid g3">
+        <div class="f"><label>X <span class="u">동서</span></label><input id="q2ox" inputmode="numeric" value="13000"></div>
+        <div class="f"><label>Y <span class="u">남북</span></label><input id="q2oy" inputmode="numeric" value="46000"></div>
+        <div class="f"><label>표고 <span class="u">m</span></label><input id="q2oh" type="number" inputmode="decimal" value="180"></div>
+      </div>
+    </section>
+    <section>
+      <h2>포대 (M) 제원</h2>
+      <div class="grid g3">
+        <div class="f"><label>X <span class="u">동서</span></label><input id="q2mx" inputmode="numeric" value="12300"></div>
+        <div class="f"><label>Y <span class="u">남북</span></label><input id="q2my" inputmode="numeric" value="45600"></div>
+        <div class="f"><label>표고 <span class="u">m</span></label><input id="q2mh" type="number" inputmode="decimal" value="100"></div>
+      </div>
+    </section>
+    <section>
+      <h2>관측 제원</h2>
+      <div class="grid g3">
+        <div class="f"><label>관측방위각 <span class="u">밀</span></label><input id="q2az" type="number" inputmode="decimal" value="700"></div>
+        <div class="f"><label>거리 <span class="u">m</span></label><input id="q2d" type="number" inputmode="decimal" value="3000"></div>
+        <div class="f"><label>수직전이량 <span class="u">m, OP 기준</span></label><input id="q2v" type="number" inputmode="decimal" value="-30"></div>
+      </div>
+      <div class="btnrow"><button class="act" data-calc="2">결과 산출</button></div>
+      <div class="err" id="q2err"></div>
+      <div class="formula">표적X = OP X + 거리 × sin(관측방위각)
+표적Y = OP Y + 거리 × cos(관측방위각)
+표적표고 = OP 표고 + 수직전이량
+→ 이후 포대 기준으로 방안좌표법과 동일하게 계산</div>
+    </section>
+    <div id="q2out"></div>
+  </div>
+
+  <!-- ── 3. 기록점전이법 ── -->
+  <div class="mscreen" id="m-shift">
+    <div class="mhead"><button data-back>‹ 뒤로</button><h3>기록점전이법</h3><span class="step">3 / 3</span></div>
+    <section>
+      <h2>기록점 (RP) 제원</h2>
+      <div class="grid g3">
+        <div class="f"><label>X <span class="u">동서</span></label><input id="q3rx" inputmode="numeric" value="14500"></div>
+        <div class="f"><label>Y <span class="u">남북</span></label><input id="q3ry" inputmode="numeric" value="48900"></div>
+        <div class="f"><label>표고 <span class="u">m</span></label><input id="q3rh" type="number" inputmode="decimal" value="150"></div>
+      </div>
+    </section>
+    <section>
+      <h2>포대 (M) 제원</h2>
+      <div class="grid g3">
+        <div class="f"><label>X <span class="u">동서</span></label><input id="q3mx" inputmode="numeric" value="12300"></div>
+        <div class="f"><label>Y <span class="u">남북</span></label><input id="q3my" inputmode="numeric" value="45600"></div>
+        <div class="f"><label>표고 <span class="u">m</span></label><input id="q3mh" type="number" inputmode="decimal" value="100"></div>
+      </div>
+    </section>
+    <section>
+      <h2>전이 제원</h2>
+      <div class="grid g3">
+        <div class="f"><label>편향 <span class="u">밀, 우+ 좌−</span></label><input id="q3def" type="number" inputmode="decimal" value="100"></div>
+        <div class="f"><label>거리증감 <span class="u">m, 증+ 감−</span></label><input id="q3rng" type="number" inputmode="decimal" value="200"></div>
+        <div class="f"><label>상하 <span class="u">m, RP 기준</span></label><input id="q3v" type="number" inputmode="decimal" value="0"></div>
+      </div>
+      <div class="btnrow"><button class="act" data-calc="3">결과 산출</button></div>
+      <div class="err" id="q3err"></div>
+      <div class="formula">포대→RP 방위각 A, 거리 D 를 먼저 구한 뒤
+새 방위각 = A + 편향(밀)
+새 거리   = D + 거리증감(m)
+표적좌표  = 포대 + 새거리 × (sin, cos 새방위각)
+표적표고  = RP 표고 + 상하</div>
+      <div class="warnbox">편향은 <b>포대–기록점 선 기준</b>으로 적용합니다. 관측자가 준 편향(OT선 기준)이라면
+        포대 기준으로 환산한 뒤 넣어야 합니다.</div>
+    </section>
+    <div id="q3out"></div>
+  </div>
+
+  <!-- ── 4. 관측자 수정 ── -->
+  <div class="mscreen" id="m-adjust">
+    <div class="mhead"><button data-back>‹ 뒤로</button><h3>관측자 수정</h3><span class="step">수정사격</span></div>
+    <section>
+      <h2>관측소 (OP) 제원</h2>
+      <div class="grid g3">
+        <div class="f"><label>X <span class="u">동서</span></label><input id="q4ox" inputmode="numeric" value="13000"></div>
+        <div class="f"><label>Y <span class="u">남북</span></label><input id="q4oy" inputmode="numeric" value="46000"></div>
+      </div>
+      <div class="note">수정 제원은 <b>관측소–표적 선(OT선) 기준</b>으로 해석합니다. 관측소 위치가 있어야 좌우가 어느 쪽인지 정해집니다.</div>
+    </section>
+    <section>
+      <h2>포대 (M) 제원</h2>
+      <div class="grid g3">
+        <div class="f"><label>X <span class="u">동서</span></label><input id="q4mx" inputmode="numeric" value="12300"></div>
+        <div class="f"><label>Y <span class="u">남북</span></label><input id="q4my" inputmode="numeric" value="45600"></div>
+        <div class="f"><label>표고 <span class="u">m</span></label><input id="q4mh" type="number" inputmode="decimal" value="100"></div>
+      </div>
+    </section>
+    <section>
+      <h2>현재 탄착점 / 표적</h2>
+      <div class="grid g3">
+        <div class="f"><label>X <span class="u">동서</span></label><input id="q4tx" inputmode="numeric" value="14500"></div>
+        <div class="f"><label>Y <span class="u">남북</span></label><input id="q4ty" inputmode="numeric" value="48900"></div>
+        <div class="f"><label>표고 <span class="u">m</span></label><input id="q4th" type="number" inputmode="decimal" value="150"></div>
+      </div>
+    </section>
+    <section>
+      <h2>수정 제원</h2>
+      <div class="grid g3">
+        <div class="f"><label>좌우 <span class="u">우+ 좌−</span></label><input id="q4lr" type="number" inputmode="decimal" value="50"></div>
+        <div class="f"><label>좌우 단위</label><select id="q4unit">
+          <option value="m" selected>m (미터)</option><option value="mil">밀 (쌍안경 관측)</option></select></div>
+        <div class="f"><label>원근 <span class="u">m, 증+ 감−</span></label><input id="q4ad" type="number" inputmode="decimal" value="100"></div>
+        <div class="f"><label>상하 <span class="u">m, 고+ 저−</span></label><input id="q4v" type="number" inputmode="decimal" value="0"></div>
+      </div>
+      <div class="btnrow"><button class="act" data-calc="4">수정 후 제원 산출</button></div>
+      <div class="err" id="q4err"></div>
+      <div class="formula">OT 방위각 A = 관측소 → 탄착점 방위각
+원근 수정 : 탄착점 + 원근 × (sin A, cos A)
+좌우 수정 : 탄착점 + 좌우 × (sin(A+1600밀), cos(A+1600밀))
+새 표고   = 기존 표고 + 상하
+밀 입력 시 : 좌우(m) = 좌우(밀) × OT거리(m) / 1000</div>
+      <div class="warnbox">「우 50」은 <b>관측자가 보는 방향 기준 우측 50m</b>입니다. 포에서 본 우측이 아닙니다.
+        관측소와 포대가 다른 방향에 있으면 둘은 전혀 다른 방향이 됩니다.</div>
+    </section>
+    <div id="q4out"></div>
+  </div>
+
+  <!-- ── 사표 관리 ── -->
+  <div class="mscreen" id="m-table">
+    <div class="mhead"><button data-back>‹ 뒤로</button><h3>사표 · 사격지휘 설정</h3></div>
+    <section>
+      <h2>사표</h2>
+      <div class="grid g2" style="margin-bottom:10px">
+        <div class="f"><label>사표 선택</label><select id="mChg"></select></div>
+        <div class="f"><label>사표 이름</label><input id="mChgName" placeholder="예: 1호장약"></div>
+      </div>
+      <div class="f">
+        <label>사표 데이터 <span class="u">한 줄에: 사거리 고각 [비행시간] [편류]</span></label>
+        <textarea id="mTable" spellcheck="false" placeholder="# 사거리(m)  고각(밀)  비행시간(초)  편류(밀)
+200   1449   15.2   3
+300   1373   16.1   4
+400   1296   17.0   5"></textarea>
+      </div>
+      <div class="btnrow">
+        <button class="ghost" id="mSaveT">사표 저장</button>
+        <button class="ghost" id="mDelT">삭제</button>
+        <button class="ghost" id="mDemoT">예시 넣기</button>
+      </div>
+      <div class="ok" id="mTableInfo"></div>
+      <div class="warnbox">
+        <b>사표 값은 화기·탄종·장약마다 다릅니다.</b> 반드시 해당 부대가 보유한 실제 사표에서
+        옮겨 적어야 합니다. 이 앱은 사거리↔고각 <b>보간과 기하 계산만</b> 하고 사표 데이터 자체는
+        만들어내지 않습니다. 「예시 넣기」 값은 동작 확인용 가짜 숫자입니다.
+      </div>
+    </section>
+    <section>
+      <h2>사격지휘 설정</h2>
+      <div class="grid g2">
+        <div class="f"><label>기준점 방위각 <span class="u">밀</span></label><input id="mRefAz" type="number" inputmode="decimal" value="0"></div>
+        <div class="f"><label>기준편각 <span class="u">밀</span></label><input id="mRefDef" type="number" inputmode="decimal" value="2800"></div>
+        <div class="f"><label>편각 증가 방향</label><select id="mDefDir">
+          <option value="-1" selected>좌로 증가 (통상)</option><option value="1">우로 증가</option></select></div>
+        <div class="f"><label>복각 보정계수 <span class="u">사표값, 없으면 0</span></label><input id="mCompF" type="number" step="0.01" inputmode="decimal" value="0"></div>
+      </div>
+      <div class="btnrow"><button class="ghost" id="mSaveCfg" style="flex:1">설정 저장</button></div>
+    </section>
+  </div>
+</div>
+
+<!-- ══════════════ 저격 ══════════════ -->
+<div class="page" id="p-sniper">
+<section>
+  <h2>탄약 / 총기 <span class="pill" id="pillMode" style="float:right">G7</span></h2>
+  <div class="f" style="margin-bottom:10px"><label>프리셋</label>
+    <select id="preset"><option value="">— 직접 입력 —</option></select></div>
+  <div class="grid">
+    <div class="f"><label>총구속도 <span class="u">m/s</span></label><input id="mv" type="number" step="1" value="790" inputmode="decimal"></div>
+    <div class="f"><label>탄도계수 BC</label><input id="bc" type="number" step="0.001" value="0.243" inputmode="decimal"></div>
+    <div class="f"><label>항력모델</label><select id="drag"><option value="G7" selected>G7 (보트테일)</option><option value="G1">G1 (플랫베이스)</option></select></div>
+    <div class="f"><label>탄자중량 <span class="u">gr</span></label><input id="wgt" type="number" step="0.1" value="175" inputmode="decimal"></div>
+    <div class="f"><label>영점거리 <span class="u">m</span></label><input id="zero" type="number" step="5" value="100" inputmode="decimal"></div>
+    <div class="f"><label>조준경 높이 <span class="u">cm</span></label><input id="sh" type="number" step="0.1" value="4.5" inputmode="decimal"></div>
+  </div>
+</section>
+<section>
+  <h2>기상 제원</h2>
+  <div class="grid">
+    <div class="f"><label>기온 <span class="u">°C</span></label><input id="temp" type="number" step="0.5" value="15" inputmode="decimal"></div>
+    <div class="f"><label>기압 <span class="u">hPa</span></label><input id="press" type="number" step="1" value="1013" inputmode="decimal"></div>
+    <div class="f"><label>습도 <span class="u">%</span></label><input id="hum" type="number" step="1" value="50" inputmode="decimal"></div>
+    <div class="f"><label>풍속 <span class="u">m/s</span></label><input id="ws" type="number" step="0.5" value="0" inputmode="decimal"></div>
+    <div class="f"><label>풍향 <span class="u">시 방향</span></label><select id="wd">
+      <option value="0">12시 — 맞바람</option><option value="30">1시</option><option value="60">2시</option>
+      <option value="90" selected>3시 — 우측</option><option value="120">4시</option><option value="150">5시</option>
+      <option value="180">6시 — 뒷바람</option><option value="210">7시</option><option value="240">8시</option>
+      <option value="270">9시 — 좌측</option><option value="300">10시</option><option value="330">11시</option></select></div>
+    <div class="f"><label>사각(고저) <span class="u">도, ↑+ ↓−</span></label><input id="look" type="number" step="1" value="0" inputmode="decimal"></div>
+  </div>
+  <div class="note" id="airInfo"></div>
+</section>
+<section>
+  <h2>출력</h2>
+  <div class="grid">
+    <div class="f"><label>최대거리 <span class="u">m</span></label><input id="maxr" type="number" step="100" value="1000" inputmode="decimal"></div>
+    <div class="f"><label>간격 <span class="u">m</span></label><input id="step" type="number" step="25" value="100" inputmode="decimal"></div>
+  </div>
+  <details style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px">
+    <summary style="font-size:12px;color:var(--dim);cursor:pointer;font-weight:600">고급 보정</summary>
+    <div class="grid" style="margin-top:12px">
+      <div class="f"><label>구경 <span class="u">mm</span></label><input id="cal" type="number" step="0.01" value="7.82" inputmode="decimal"></div>
+      <div class="f"><label>탄자길이 <span class="u">mm, 선택</span></label><input id="blen" type="number" step="0.1" value="" placeholder="미입력 시 추정" inputmode="decimal"></div>
+      <div class="f"><label>트위스트 <span class="u">1: 인치</span></label><input id="twist" type="number" step="0.5" value="11.25" inputmode="decimal"></div>
+      <div class="f"><label>강선 방향</label><select id="twdir"><option value="1" selected>우선 (RH)</option><option value="-1">좌선 (LH)</option></select></div>
+      <div class="f"><label>위도 <span class="u">도</span></label><input id="lat" type="number" step="0.5" value="37.5" inputmode="decimal"></div>
+      <div class="f"><label>사격 방위각 <span class="u">도</span></label><input id="az" type="number" step="5" value="0" inputmode="decimal"></div>
+      <div class="f"><label>속도 온도계수 <span class="u">m/s per °C</span></label><input id="mvt" type="number" step="0.1" value="0" inputmode="decimal"></div>
+    </div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:12px">
+      <label class="row-chk"><input type="checkbox" id="useSpin" checked> 스핀 드리프트</label>
+      <label class="row-chk"><input type="checkbox" id="useCor"> 코리올리 효과</label>
+    </div>
+  </details>
+  <div class="btnrow">
+    <button class="act" id="btnCalc">계산</button>
+    <button class="ghost" id="btnSave">저장</button>
+    <button class="ghost" id="btnLoad">불러오기</button>
+  </div>
+  <div class="err" id="err"></div>
+</section>
+<section id="resultBox" style="display:none">
+  <h2>결과</h2>
+  <div class="summary" id="sum" style="margin-bottom:12px"></div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>거리</th><th>낙차<br><span style="font-weight:400">cm</span></th>
+    <th>상하<br><span style="font-weight:400">MIL</span></th><th>상하<br><span style="font-weight:400">MOA</span></th>
+    <th>편차<br><span style="font-weight:400">cm</span></th><th>좌우<br><span style="font-weight:400">MIL</span></th>
+    <th>좌우<br><span style="font-weight:400">MOA</span></th><th>속도<br><span style="font-weight:400">m/s</span></th>
+    <th>마하</th><th>시간<br><span style="font-weight:400">s</span></th><th>에너지<br><span style="font-weight:400">J</span></th>
+    </tr></thead><tbody id="tb"></tbody></table></div>
+  <div class="note"><b>MIL = mrad</b> (조준경 클릭 단위, 1원주 6283). 박격포 밀(6400)과 다른 단위입니다.<br>
+    상하는 <b>양수 = UP</b>, 좌우는 <b>L / R</b> 표기대로 조준경을 돌립니다.<br>
+    거리 옆 <b>·</b> 는 천음속(마하 1.2 이하) 구간 — 탄착군이 흐트러져 신뢰도가 떨어집니다.</div>
+</section>
+</div>
+
+<!-- ══════════════ 도구 ══════════════ -->
+<div class="page" id="p-tools">
+<section>
+  <h2>밀 관계식</h2>
+  <div class="note" style="margin:0 0 12px"><b>폭(m) = 거리(km) × 밀</b> — 둘을 넣으면 나머지가 나옵니다.</div>
+  <div class="grid">
+    <div class="f"><label>거리 <span class="u">m</span></label><input id="tR" type="number" value="1000" inputmode="decimal"></div>
+    <div class="f"><label>각 <span class="u">밀 6400</span></label><input id="tM" type="number" value="10" inputmode="decimal"></div>
+    <div class="f"><label>폭 <span class="u">m</span></label><input id="tW" type="number" value="10" inputmode="decimal"></div>
+  </div>
+  <div class="btnrow">
+    <button class="ghost" id="tCalcW" style="flex:1">폭</button>
+    <button class="ghost" id="tCalcM" style="flex:1">각</button>
+    <button class="ghost" id="tCalcR" style="flex:1">거리</button>
+  </div>
+</section>
+<section>
+  <h2>각도 단위 변환</h2>
+  <div class="grid">
+    <div class="f"><label>밀 <span class="u">6400, 포병</span></label><input id="uMil" type="number" value="100" inputmode="decimal"></div>
+    <div class="f"><label>도 <span class="u">360</span></label><input id="uDeg" type="number" value="5.63" inputmode="decimal"></div>
+    <div class="f"><label>mrad <span class="u">6283, 조준경</span></label><input id="uMrad" type="number" value="98.17" inputmode="decimal"></div>
+    <div class="f"><label>MOA <span class="u">21600</span></label><input id="uMoa" type="number" value="337.50" inputmode="decimal"></div>
+  </div>
+  <div class="warnbox"><b>밀(6400)과 mrad(6283)은 다른 단위입니다.</b> 포병·박격포 방위각은 6400 밀,
+    조준경 클릭은 mrad를 씁니다. 약 1.86% 차이라 짧은 거리에선 안 드러나지만 긴 거리에서 크게 빗나갑니다.</div>
+</section>
+<section>
+  <h2>이 계산기에 대해</h2>
+  <div class="note">
+    <b>박격포 탭</b>은 좌표 기하(거리·방위각·복각)와 편각 변환, 사표 보간을 합니다.
+    사거리별 고각은 물리 계산이 아니라 <b>사표 실측 데이터</b>라서 부대 사표를 직접 입력해야 나옵니다.<br><br>
+    <b>저격 탭</b>은 공개 외탄도학으로 전부 계산합니다 — G1/G7 표준 항력함수, 습공기 밀도(Magnus),
+    시선 정렬 좌표계 수치적분, Miller 안정계수, Litz 스핀드리프트, 코리올리.
+    총구속도·BC는 <b>크로노그래프 실측과 실사격 탄착으로 교정</b>해야 맞습니다.<br><br>
+    편각 부호 규약은 부대 SOP마다 다를 수 있습니다. <b>첫 사용 전 알고 있는 제원으로 역검산</b>하세요.
+    모든 데이터는 이 기기 안에만 저장되고 어디로도 전송되지 않습니다.
+  </div>
+</section>
+</div>
+
+</div>
+
+<script>
+"use strict";
+
+/* ══════════ 표준 항력함수 (Cd vs Mach) — 공개 자료 ══════════ */
+const G1=[[0,.2629],[.05,.2558],[.1,.2487],[.15,.2413],[.2,.2344],[.25,.2278],[.3,.2214],
+[.35,.2155],[.4,.2104],[.45,.2061],[.5,.2032],[.55,.202],[.6,.2034],[.7,.2165],[.725,.223],
+[.75,.2313],[.775,.2417],[.8,.2546],[.825,.2706],[.85,.2901],[.875,.3136],[.9,.3415],
+[.925,.3734],[.95,.4084],[.975,.4448],[1,.4805],[1.025,.5136],[1.05,.5427],[1.075,.5677],
+[1.1,.5883],[1.125,.6053],[1.15,.6191],[1.2,.6393],[1.25,.6518],[1.3,.6589],[1.35,.6621],
+[1.4,.6625],[1.45,.6607],[1.5,.6573],[1.55,.6528],[1.6,.6474],[1.65,.6413],[1.7,.6347],
+[1.75,.628],[1.8,.621],[1.85,.6141],[1.9,.6072],[1.95,.6003],[2,.5934],[2.05,.5867],
+[2.1,.5804],[2.15,.5743],[2.2,.5685],[2.25,.563],[2.3,.5577],[2.35,.5527],[2.4,.5481],
+[2.45,.5438],[2.5,.5397],[2.6,.5325],[2.7,.5264],[2.8,.5211],[2.9,.5168],[3,.5133],
+[3.2,.5081],[3.4,.5048],[3.6,.5033],[3.8,.5031],[4,.5039],[4.4,.5062],[4.8,.5085],[5,.5095]];
+const G7=[[0,.1198],[.05,.1197],[.1,.1196],[.15,.1194],[.2,.1193],[.25,.1194],[.3,.1194],
+[.35,.1194],[.4,.1193],[.45,.1193],[.5,.1194],[.55,.1193],[.6,.1194],[.65,.1197],[.7,.1202],
+[.725,.1207],[.75,.1215],[.775,.1226],[.8,.1242],[.825,.1266],[.85,.1306],[.875,.1368],
+[.9,.1464],[.925,.166],[.95,.2054],[.975,.2993],[1,.3803],[1.025,.4015],[1.05,.4043],
+[1.075,.4034],[1.1,.4014],[1.125,.3987],[1.15,.3955],[1.2,.3884],[1.25,.381],[1.3,.3732],
+[1.35,.3657],[1.4,.358],[1.5,.344],[1.55,.3376],[1.6,.3315],[1.65,.326],[1.7,.3209],
+[1.75,.316],[1.8,.3117],[1.85,.3078],[1.9,.3042],[1.95,.301],[2,.298],[2.05,.2951],
+[2.1,.2922],[2.15,.2892],[2.2,.2864],[2.25,.2835],[2.3,.2807],[2.35,.2779],[2.4,.2752],
+[2.45,.2725],[2.5,.2697],[2.6,.2643],[2.7,.2588],[2.8,.2533],[2.9,.2479],[3,.2424],
+[3.2,.2318],[3.4,.2219],[3.6,.2131],[3.8,.2054],[4,.1988],[4.4,.1876],[4.8,.1789],[5,.1753]];
+
+function cd(tbl,m){
+  const n=tbl.length;
+  if(m<=tbl[0][0])return tbl[0][1];
+  if(m>=tbl[n-1][0])return tbl[n-1][1];
+  let lo=0,hi=n-1;
+  while(hi-lo>1){const mid=(lo+hi)>>1; if(tbl[mid][0]<=m)lo=mid; else hi=mid;}
+  const a=tbl[lo],b=tbl[hi];
+  return a[1]+(b[1]-a[1])*(m-a[0])/(b[0]-a[0]);
+}
+
+const RHO_STD=1.2250, OMEGA=7.292115e-5, G_FPS=32.17405, FT=3.280839895;
+const MIL_PER_RAD=6400/(2*Math.PI);
+
+function airDensity(tC,pHPa,rh){
+  const T=tC+273.15;
+  const Ps=6.1078*Math.pow(10,(7.5*tC)/(tC+237.3))*100;
+  const Pv=Math.max(0,Math.min(100,rh))/100*Ps;
+  return (pHPa*100-Pv)/(287.058*T)+Pv/(461.495*T);
+}
+const speedOfSound=tC=>331.3*Math.sqrt(1+tC/273.15);
+
+/* ══════════ 탄도 적분기 ══════════ */
+function integrate(o){
+  const DT=0.0005,g=G_FPS;
+  const gx=-g*Math.sin(o.lookRad),gy=-g*Math.cos(o.lookRad);
+  const corZ=o.cor?2*OMEGA*Math.sin(o.latRad):0;
+  const corY=o.cor?2*OMEGA*Math.cos(o.latRad)*Math.sin(o.azRad):0;
+  let x=0,y=-o.shFt,z=0,t=0;
+  let vx=o.v0*Math.cos(o.launchRad),vy=o.v0*Math.sin(o.launchRad),vz=0;
+  const out=[];let si=0;const S=o.samples;
+  while(si<S.length){
+    if(t>25||vx<=0)break;
+    const rvx=vx-o.wx,rvy=vy,rvz=vz-o.wz;
+    const v=Math.sqrt(rvx*rvx+rvy*rvy+rvz*rvz);
+    const k=2.08551e-4*o.rhoR*cd(o.tbl,v/o.machFps)*v/o.bc;
+    const ax=-k*rvx+gx,ay=-k*rvy+gy+corY*vx,az=-k*rvz+corZ*vx;
+    const px=x,py=y,pz=z,pvx=vx,pvy=vy,pvz=vz,pt=t;
+    x+=vx*DT+0.5*ax*DT*DT;y+=vy*DT+0.5*ay*DT*DT;z+=vz*DT+0.5*az*DT*DT;
+    vx+=ax*DT;vy+=ay*DT;vz+=az*DT;t+=DT;
+    while(si<S.length&&x>=S[si]){
+      const f=(S[si]-px)/(x-px||1e-12);
+      out.push({x:S[si],y:py+(y-py)*f,z:pz+(z-pz)*f,
+        vx:pvx+(vx-pvx)*f,vy:pvy+(vy-pvy)*f,vz:pvz+(vz-pvz)*f,t:pt+(t-pt)*f});
+      si++;
+    }
+  }
+  return out;
+}
+function findZero(base,zeroFt){
+  const at=a=>{const r=integrate({...base,launchRad:a,lookRad:0,wx:0,wz:0,cor:false,samples:[zeroFt]});
+    return r.length?r[0].y:-1e9;};
+  let lo=-0.03,hi=0.35;
+  if(at(hi)<0)return null;
+  for(let i=0;i<48;i++){const mid=(lo+hi)/2;if(at(mid)<0)lo=mid;else hi=mid;}
+  return (lo+hi)/2;
+}
+function millerSG(gr,calIn,lenIn,twIn,mvFps,tC,pHPa){
+  const l=lenIn/calIn,tw=twIn/calIn;
+  let sg=(30*gr)/(tw*tw*Math.pow(calIn,3)*l*(1+l*l));
+  sg*=Math.pow(mvFps/2800,1/3);
+  sg*=((tC*9/5+32)+460)/519*(29.92/(pHPa*0.02953));
+  return sg;
+}
+const spinDriftIn=(sg,tof)=>1.25*(sg+1.2)*Math.pow(tof,1.83);
+
+const PRESETS={
+  "762_m118":{n:"7.62×51 M118LR 175gr",mv:790,bc:.243,drag:"G7",wgt:175,cal:7.82,blen:31.9,twist:11.25},
+  "762_m80":{n:"7.62×51 M80 147gr",mv:840,bc:.200,drag:"G7",wgt:147,cal:7.82,blen:28.8,twist:12},
+  "556_m855":{n:"5.56×45 M855 62gr",mv:920,bc:.151,drag:"G7",wgt:62,cal:5.70,blen:23.0,twist:7},
+  "556_mk262":{n:"5.56×45 Mk262 77gr",mv:820,bc:.190,drag:"G7",wgt:77,cal:5.70,blen:25.4,twist:7},
+  "300wm":{n:".300 Win Mag 190gr",mv:870,bc:.268,drag:"G7",wgt:190,cal:7.82,blen:33.5,twist:10},
+  "338lm":{n:".338 Lapua 250gr",mv:900,bc:.322,drag:"G7",wgt:250,cal:8.58,blen:39.6,twist:10},
+  "50bmg":{n:".50 BMG M33 661gr",mv:887,bc:.360,drag:"G7",wgt:661,cal:12.95,blen:58.7,twist:15}
+};
+
+/* ══════════ 공통 UI ══════════ */
+const $=id=>document.getElementById(id);
+const num=id=>parseFloat($(id).value);
+
+/* localStorage 는 file:// + Safari / 메신저 내장 브라우저 / 시크릿 모드에서
+   접근만 해도 SecurityError 를 던진다. 감싸지 않으면 스크립트 전체가 죽어
+   "화면은 뜨는데 버튼이 안 먹는" 상태가 된다. 저장이 안 돼도 계산은 되어야 한다. */
+const store=(()=>{
+  let ok=true;
+  try{localStorage.setItem("__t","1");localStorage.removeItem("__t");}catch(e){ok=false;}
+  return{ok,
+    get(k){if(!ok)return null;try{return localStorage.getItem(k);}catch(e){return null;}},
+    set(k,v){if(!ok)return false;try{localStorage.setItem(k,v);return true;}catch(e){return false;}}};
+})();
+
+/* 스크립트가 죽으면 조용히 먹통이 되는 대신 화면에 띄운다 */
+function showErr(msg){
+  let b=document.getElementById("__errbar");
+  if(!b){
+    b=document.createElement("div");b.id="__errbar";
+    b.style.cssText="position:fixed;left:0;right:0;bottom:0;z-index:99;background:#f85149;"+
+      "color:#fff;padding:10px 14px;font-size:12px;font-family:monospace;line-height:1.5";
+    document.body.appendChild(b);
+  }
+  b.textContent=msg;
+}
+window.addEventListener("error",ev=>{
+  showErr("스크립트 오류: "+(ev.message||ev.error)+" (줄 "+ev.lineno+")");
+});
+
+/* ─────────────────────────────────────────────────────────────
+   내비게이션은 document 위임 방식으로 처리한다.
+   버튼마다 onclick 을 붙이면, 아래쪽 초기화 코드가 한 줄이라도
+   터졌을 때 연결 자체가 안 돼서 "화면은 보이는데 아무것도 안 눌리는"
+   상태가 된다. 위임이면 리스너 하나만 살아 있으면 이동은 항상 된다.
+   ───────────────────────────────────────────────────────────── */
+function goScreen(id){
+  const el=document.getElementById(id);
+  if(!el)return;
+  document.querySelectorAll(".mscreen").forEach(s=>s.classList.remove("on"));
+  el.classList.add("on");
+  window.scrollTo(0,0);
+}
+function goTab(p){
+  document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on",x.dataset.p===p));
+  document.querySelectorAll(".page").forEach(x=>x.classList.toggle("on",x.id==="p-"+p));
+  window.scrollTo(0,0);
+}
+document.addEventListener("click",function(ev){
+  let t=ev.target;
+  if(!t||t.nodeType!==1)return;
+  if(!t.closest){                                  // 구형 브라우저 대비 수동 탐색
+    while(t&&t.nodeType===1&&!t.getAttribute("data-go")&&!t.getAttribute("data-back"))t=t.parentNode;
+    if(t&&t.nodeType===1){
+      if(t.getAttribute("data-go"))goScreen(t.getAttribute("data-go"));
+      else if(t.getAttribute("data-back"))goScreen("m-menu");
+    }
+    return;
+  }
+  const go=t.closest("[data-go]");        if(go){goScreen(go.getAttribute("data-go"));return;}
+  const back=t.closest("[data-back]");    if(back){goScreen("m-menu");return;}
+  const tab=t.closest(".tabs button");    if(tab){goTab(tab.getAttribute("data-p"));return;}
+  const night=t.closest("#btnNight");
+  if(night){
+    document.documentElement.classList.toggle("night");
+    store.set("bc_night",document.documentElement.classList.contains("night")?"1":"0");
+  }
+});
+if(store.get("bc_night")==="1")document.documentElement.classList.add("night");
+function flash(id,txt){const b=$(id),o=b.textContent;b.textContent=txt;setTimeout(()=>b.textContent=o,1100);}
+
+/* 초기화 블록을 서로 격리한다 — 하나가 실패해도 나머지는 계속 동작 */
+function safeInit(name,fn){
+  try{fn();}catch(e){showErr("초기화 실패 ["+name+"] "+e.message);}
+}
+
+/* ══════════ 박격포 — 기하 ══════════ */
+const normMil=m=>((m%6400)+6400)%6400;
+
+// 격자 4·6·8·10자리 또는 미터값
+function parseCoord(s){
+  s=(s||"").trim().replace(/\s+/g,"");
+  if(!s)return NaN;
+  const v=Number(s);
+  return isFinite(v)?v:NaN;
+}
+function polar(from,to){
+  const dE=to.e-from.e,dN=to.n-from.n;
+  return{dE,dN,dist:Math.hypot(dE,dN),az:normMil(Math.atan2(dE,dN)*MIL_PER_RAD)};
+}
+function project(from,azMil,dist){
+  const r=azMil/MIL_PER_RAD;
+  return{e:from.e+dist*Math.sin(r),n:from.n+dist*Math.cos(r)};
+}
+function toGrid(v){
+  const m=((v%100000)+100000)%100000;
+  return String(Math.floor(m/10)).padStart(4,"0");
+}
+
+function parseTable(txt){
+  const rows=[];
+  (txt||"").split(/\n/).forEach(line=>{
+    const s=line.trim();
+    if(!s||s.startsWith("#")||s.startsWith("//"))return;
+    const p=s.split(/[\s,\t]+/).map(Number);
+    if(p.length>=2&&isFinite(p[0])&&isFinite(p[1]))
+      rows.push({r:p[0],e:p[1],t:isFinite(p[2])?p[2]:null,d:isFinite(p[3])?p[3]:null});
+  });
+  rows.sort((a,b)=>a.r-b.r);
+  return rows;
+}
+function interpTable(rows,range){
+  if(!rows.length)return{err:"사표가 등록되지 않았습니다"};
+  const lo=rows[0],hi=rows[rows.length-1];
+  if(range<lo.r||range>hi.r)
+    return{err:`사거리 ${Math.round(range)}m 가 사표 범위(${lo.r}~${hi.r}m)를 벗어납니다`};
+  let i=0;while(i<rows.length-1&&rows[i+1].r<range)i++;
+  const a=rows[i],b=rows[Math.min(i+1,rows.length-1)];
+  if(b.r===a.r)return{e:a.e,t:a.t,d:a.d,a,b,slope:0};
+  const f=(range-a.r)/(b.r-a.r);
+  const lin=(x,y)=>(x!==null&&y!==null)?x+(y-x)*f:null;
+  return{e:a.e+(b.e-a.e)*f,t:lin(a.t,b.t),d:lin(a.d,b.d),a,b,slope:(b.e-a.e)/(b.r-a.r)*100};
+}
+
+/* ══════════ 박격포 — 공통 결과 렌더 ══════════ */
+function renderResult(outId,gun,gunH,tgt,tgtH,steps){
+  const gt=polar(gun,tgt);
+  const dH=tgtH-gunH;
+  if(gt.dist<1)throw new Error("포대와 표적이 같은 위치입니다");
+  const siteMil=Math.atan2(dH,gt.dist)*MIL_PER_RAD;
+  const slant=Math.hypot(gt.dist,dH);
+
+  let html=`<section><h2>결과 산출</h2>
+    <div class="summary">
+      ${cell("표적 X",Math.round(tgt.e))}
+      ${cell("표적 Y",Math.round(tgt.n))}
+      ${cell("격자좌표",toGrid(tgt.e)+toGrid(tgt.n))}
+      ${cell("ΔX / ΔY",Math.round(gt.dE)+" / "+Math.round(gt.dN))}
+      ${cell("수평거리",Math.round(gt.dist)+" m")}
+      ${cell("표고차",(dH>=0?"+":"")+Math.round(dH)+" m")}
+      ${cell("사격방위각",Math.round(gt.az)+" 밀")}
+      ${cell("방위각(도)",(gt.az*360/6400).toFixed(1)+"°")}
+      ${cell("복각",(siteMil>=0?"+":"")+siteMil.toFixed(1)+" 밀")}
+      ${cell("경사거리",Math.round(slant)+" m")}
+    </div>`;
+  if(steps&&steps.length)html+=`<div class="formula">${steps.join("\n")}</div>`;
+  html+=`</section>`;
+
+  // ── 사표 → 편각·고각
+  const rows=parseTable($("mTable").value);
+  const it=interpTable(rows,gt.dist);
+  if(it.err){
+    html+=`<section><h2>사격 제원</h2>
+      <div class="warnbox"><b>${it.err}</b><br>
+      편각·고각을 내려면 「사표 · 사격지휘 설정」에서 부대 사표를 등록하세요.
+      위의 거리·방위각·표고차는 사표 없이도 정확합니다.</div>
+      <div class="btnrow"><button class="ghost" style="flex:1" onclick="goScreen('m-table')">사표 등록하러 가기</button></div>
+      </section>`;
+  }else{
+    const compF=num("mCompF")||0;
+    const compMil=siteMil*compF;
+    const totalSite=siteMil+compMil;
+    const finalElev=it.e+totalSite;
+    const refAz=num("mRefAz")||0,refDef=num("mRefDef")||0;
+    const dirSign=parseInt($("mDefDir").value,10);
+    const rawDef=normMil(refDef+dirSign*(gt.az-refAz));
+    const driftMil=it.d!==null?it.d:0;
+    const finalDef=normMil(rawDef-dirSign*driftMil);
+    const chg=$("mChg").value||$("mChgName").value||"—";
+
+    html+=`<section><h2>사격 제원</h2>
+      <div class="fire">
+        <div><div class="k">편각</div><div class="v">${Math.round(finalDef)}</div><div class="s">밀</div></div>
+        <div><div class="k">고각</div><div class="v">${Math.round(finalElev)}</div><div class="s">밀</div></div>
+        <div><div class="k">사거리</div><div class="v">${Math.round(gt.dist)}</div><div class="s">m</div></div>
+        <div><div class="k">장약</div><div class="v sm">${chg}</div><div class="s">${it.t!==null?it.t.toFixed(1)+"초":""}</div></div>
+      </div>
+      <div class="formula">보간 구간 ${it.a.r}m(${it.a.e}밀) ~ ${it.b.r}m(${it.b.e}밀) · 100m당 ${it.slope.toFixed(1)}밀
+고각 = 사표 ${it.e.toFixed(1)} ${totalSite>=0?"+":"−"} 사각 ${Math.abs(totalSite).toFixed(1)} = ${finalElev.toFixed(1)} 밀${compF?`
+       (복각 ${siteMil.toFixed(1)} + 콤플리멘터리 ${compMil.toFixed(1)})`:`
+       (콤플리멘터리 미적용 — 사표 계수 입력 시 반영)`}
+편각 = 기준편각 ${refDef} ${dirSign<0?"−":"+"} (방위각 ${Math.round(gt.az)} − 기준 ${refAz}) = ${Math.round(rawDef)} 밀${driftMil?`
+       편류 ${driftMil.toFixed(1)}밀 보정 → ${Math.round(finalDef)} 밀`:""}</div>
+      <div class="warnbox">편각 부호 규약과 편류 적용 방향은 부대 SOP마다 다를 수 있습니다.
+        <b>알고 있는 제원으로 반드시 역검산</b>하세요.</div>
+      </section>`;
+  }
+  $(outId).innerHTML=html;
+  $(outId).scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+const cell=(k,v)=>`<div><div class="k">${k}</div><div class="v">${v}</div></div>`;
+
+/* ══════════ 박격포 — 세 가지 방법 ══════════ */
+function readPt(px,py){
+  const e=parseCoord($(px).value),n=parseCoord($(py).value);
+  if(!isFinite(e)||!isFinite(n))return null;
+  return{e,n};
+}
+
+/* 계산 버튼도 위임 방식 */
+document.addEventListener("click",function(ev){
+  const t=ev.target;
+  if(!t||t.nodeType!==1||!t.closest)return;
+  const b=t.closest("[data-calc]");
+  if(!b)return;
+  const k=b.getAttribute("data-calc");
+  $("q"+k+"err").textContent="";
+  try{
+    if(k==="1")calcGrid();
+    else if(k==="2")calcPolar();
+    else if(k==="3")calcShift();
+    else calcAdjust();
+  }catch(e){
+    $("q"+k+"err").textContent=e.message;
+    $("q"+k+"out").innerHTML="";
+  }
+});
+
+// 1. 방안좌표법
+function calcGrid(){
+  const gun=readPt("q1mx","q1my"),tgt=readPt("q1tx","q1ty");
+  if(!gun)throw new Error("포대 좌표를 확인하세요");
+  if(!tgt)throw new Error("표적 좌표를 확인하세요");
+  const gunH=num("q1mh")||0,tgtH=num("q1th")||0;
+  const gt=polar(gun,tgt);
+  renderResult("q1out",gun,gunH,tgt,tgtH,[
+    `ΔX = ${Math.round(tgt.e)} − ${Math.round(gun.e)} = ${Math.round(gt.dE)}`,
+    `ΔY = ${Math.round(tgt.n)} − ${Math.round(gun.n)} = ${Math.round(gt.dN)}`,
+    `수평거리 = √(${Math.round(gt.dE)}² + ${Math.round(gt.dN)}²) = ${gt.dist.toFixed(1)} m`,
+    `방위각 = atan2(ΔX, ΔY) → ${gt.az.toFixed(1)} 밀`
+  ]);
+}
+
+// 2. 극표정법
+function calcPolar(){
+  const obs=readPt("q2ox","q2oy"),gun=readPt("q2mx","q2my");
+  if(!obs)throw new Error("관측소 좌표를 확인하세요");
+  if(!gun)throw new Error("포대 좌표를 확인하세요");
+  const az=num("q2az"),d=num("q2d"),vert=num("q2v")||0;
+  if(!isFinite(az))throw new Error("관측방위각을 입력하세요");
+  if(!isFinite(d)||d<=0)throw new Error("관측거리는 0보다 커야 합니다");
+  const tgt=project(obs,az,d);
+  const tgtH=(num("q2oh")||0)+vert;
+  renderResult("q2out",gun,num("q2mh")||0,tgt,tgtH,[
+    `표적X = ${Math.round(obs.e)} + ${d} × sin(${az}밀) = ${tgt.e.toFixed(1)}`,
+    `표적Y = ${Math.round(obs.n)} + ${d} × cos(${az}밀) = ${tgt.n.toFixed(1)}`,
+    `표적표고 = OP ${num("q2oh")||0} ${vert>=0?"+":"−"} ${Math.abs(vert)} = ${tgtH} m`,
+    `→ 포대 기준으로 재계산`
+  ]);
+}
+
+// 3. 기록점전이법
+function calcShift(){
+  const rp=readPt("q3rx","q3ry"),gun=readPt("q3mx","q3my");
+  if(!rp)throw new Error("기록점 좌표를 확인하세요");
+  if(!gun)throw new Error("포대 좌표를 확인하세요");
+  const base=polar(gun,rp);
+  if(base.dist<1)throw new Error("포대와 기록점이 같은 위치입니다");
+  const dDef=num("q3def")||0,dRng=num("q3rng")||0,vert=num("q3v")||0;
+  const newAz=normMil(base.az+dDef);
+  const newDist=base.dist+dRng;
+  if(newDist<=0)throw new Error("거리증감 적용 후 사거리가 0 이하입니다");
+  const tgt=project(gun,newAz,newDist);
+  const tgtH=(num("q3rh")||0)+vert;
+  renderResult("q3out",gun,num("q3mh")||0,tgt,tgtH,[
+    `포대→RP : 방위각 ${base.az.toFixed(1)}밀 / 거리 ${base.dist.toFixed(1)}m`,
+    `새 방위각 = ${base.az.toFixed(1)} ${dDef>=0?"+":"−"} ${Math.abs(dDef)} = ${newAz.toFixed(1)} 밀`,
+    `새 거리   = ${base.dist.toFixed(1)} ${dRng>=0?"+":"−"} ${Math.abs(dRng)} = ${newDist.toFixed(1)} m`,
+    `표적표고  = RP ${num("q3rh")||0} ${vert>=0?"+":"−"} ${Math.abs(vert)} = ${tgtH} m`
+  ]);
+}
+
+// 4. 관측자 수정 — 수정 제원은 OT선(관측소→탄착점) 기준으로 해석한다
+function calcAdjust(){
+  const obs=readPt("q4ox","q4oy"),gun=readPt("q4mx","q4my"),cur=readPt("q4tx","q4ty");
+  if(!obs)throw new Error("관측소 좌표를 확인하세요");
+  if(!gun)throw new Error("포대 좌표를 확인하세요");
+  if(!cur)throw new Error("현재 탄착점 좌표를 확인하세요");
+  const ot=polar(obs,cur);
+  if(ot.dist<1)throw new Error("관측소와 탄착점이 같은 위치입니다");
+
+  let lr=num("q4lr")||0;
+  const unit=$("q4unit").value;
+  const lrMil=unit==="mil"?lr:null;
+  if(unit==="mil")lr=lr*ot.dist/1000;          // 밀 관계식: 폭 = 거리(km) × 밀
+  const ad=num("q4ad")||0, vert=num("q4v")||0;
+
+  const otRad=ot.az/MIL_PER_RAD;
+  const rRad=otRad+Math.PI/2;                  // OT선 기준 우측 (+1600밀)
+  const tgt={ e: cur.e + ad*Math.sin(otRad) + lr*Math.sin(rRad),
+              n: cur.n + ad*Math.cos(otRad) + lr*Math.cos(rRad) };
+  const tgtH=(num("q4th")||0)+vert;
+
+  renderResult("q4out",gun,num("q4mh")||0,tgt,tgtH,[
+    `OT선 : 관측소→탄착점 방위각 ${ot.az.toFixed(1)}밀 / 거리 ${ot.dist.toFixed(0)}m`,
+    lrMil!==null
+      ? `좌우 : ${lrMil}밀 × ${ot.dist.toFixed(0)}m / 1000 = ${lr.toFixed(1)}m (${lr>=0?"우":"좌"})`
+      : `좌우 : ${Math.abs(lr)}m (${lr>=0?"우":"좌"}) — OT선 수직방향`,
+    `원근 : ${Math.abs(ad)}m (${ad>=0?"증":"감"}) — OT선 방향`,
+    `표적 = (${tgt.e.toFixed(1)}, ${tgt.n.toFixed(1)}) 표고 ${tgtH}m`,
+    `→ 포대 기준으로 재계산`
+  ]);
+}
+
+/* ══════════ 박격포 — 사표 저장소 ══════════ */
+const TKEY="mc_tables",CKEY="mc_cfg";
+const loadTables=()=>{try{return JSON.parse(store.get(TKEY))||{};}catch(e){return{};}};
+const saveTables=t=>store.set(TKEY,JSON.stringify(t));
+
+function refreshChargeList(sel){
+  const t=loadTables(),s=$("mChg");
+  s.innerHTML="";
+  const names=Object.keys(t);
+  if(!names.length){
+    const o=document.createElement("option");
+    o.value="";o.textContent="— 저장된 사표 없음 —";s.appendChild(o);return;
+  }
+  names.forEach(n=>{const o=document.createElement("option");o.value=n;o.textContent=n;s.appendChild(o);});
+  if(sel&&t[sel])s.value=sel;
+}
+function showTableInfo(){
+  const rows=parseTable($("mTable").value);
+  if(!rows.length){
+    $("mTableInfo").textContent="";
+    $("tblStatus").textContent="사표 미등록 — 편각·고각이 나오려면 필요합니다";
+    return;
+  }
+  const hasT=rows.every(r=>r.t!==null),hasD=rows.every(r=>r.d!==null);
+  const msg=`${rows.length}행 · ${rows[0].r}~${rows[rows.length-1].r}m`+
+    (hasT?" · 비행시간":"")+(hasD?" · 편류":"");
+  $("mTableInfo").textContent=msg+" 인식됨";
+  $("tblStatus").textContent=($("mChgName").value||"사표")+" — "+msg;
+}
+const CFG=["mRefAz","mRefDef","mDefDir","mCompF"];
+safeInit("사표 버튼",function(){
+$("mChg").onchange=()=>{
+  const t=loadTables(),n=$("mChg").value;
+  if(t[n]){$("mTable").value=t[n];$("mChgName").value=n;showTableInfo();}
+};
+$("mSaveT").onclick=()=>{
+  const n=($("mChgName").value||"").trim();
+  if(!n){alert("사표 이름을 입력하세요");return;}
+  if(parseTable($("mTable").value).length<2){alert("사표는 최소 2행 이상 필요합니다");return;}
+  const t=loadTables();t[n]=$("mTable").value;
+  if(!saveTables(t)){alert("이 브라우저에서는 저장이 안 됩니다(파일 직접 열기 제한).\n계산은 정상 동작하며, 창을 닫으면 사표가 사라집니다.");}
+  refreshChargeList(n);showTableInfo();flash("mSaveT","저장됨");
+};
+$("mDelT").onclick=()=>{
+  const n=$("mChg").value;if(!n)return;
+  const t=loadTables();delete t[n];saveTables(t);
+  refreshChargeList();$("mTable").value="";$("mChgName").value="";showTableInfo();
+};
+$("mDemoT").onclick=()=>{
+  $("mChgName").value="★예시-실제사표아님";
+  $("mTable").value=
+`# 동작 확인용 가짜 값입니다. 실사격에 쓰지 마십시오.
+# 사거리  고각   비행시간  편류
+200   1449   15.2    3
+400   1296   17.0    5
+600   1198   18.5    7
+800   1120   19.6    9
+1000  1050   20.3   11
+1500   960   21.8   16
+2000   900   23.0   20
+2500   865   24.1   24
+3000   838   25.0   27
+3500   815   25.8   30
+4000   800   26.5   33`;
+  showTableInfo();
+};
+$("mTable").addEventListener("input",showTableInfo);
+$("mSaveCfg").onclick=()=>{
+  const d={};CFG.forEach(f=>d[f]=$(f).value);
+  store.set(CKEY,JSON.stringify(d));flash("mSaveCfg","저장됨");
+};
+});
+safeInit("사표",function(){
+  refreshChargeList();
+  const t=loadTables(),n=Object.keys(t)[0];
+  if(n){$("mChg").value=n;$("mTable").value=t[n];$("mChgName").value=n;}
+  try{
+    const c=JSON.parse(store.get(CKEY));
+    if(c)CFG.forEach(f=>{if(c[f]!==undefined)$(f).value=c[f];});
+  }catch(e){}
+  showTableInfo();
+});
+
+/* ══════════ 저격 ══════════ */
+safeInit("저격 프리셋",function(){
+  const sel=$("preset");
+  for(const[k,v]of Object.entries(PRESETS)){
+    const o=document.createElement("option");o.value=k;o.textContent=v.n;sel.appendChild(o);
+  }
+  sel.onchange=()=>{
+    const p=PRESETS[sel.value];if(!p)return;
+    $("mv").value=p.mv;$("bc").value=p.bc;$("drag").value=p.drag;
+    $("wgt").value=p.wgt;$("cal").value=p.cal;$("blen").value=p.blen;$("twist").value=p.twist;
+    calc();
+  };
+});
+const FIELDS=["mv","bc","drag","wgt","zero","sh","temp","press","hum","ws","wd","look",
+  "maxr","step","cal","blen","twist","twdir","lat","az","mvt"];
+safeInit("저격 버튼",function(){
+$("btnSave").onclick=()=>{
+  const d={};FIELDS.forEach(f=>d[f]=$(f).value);
+  d.useSpin=$("useSpin").checked;d.useCor=$("useCor").checked;
+  if(!store.set("bc_profile",JSON.stringify(d)))alert("이 브라우저에서는 저장이 안 됩니다(파일 직접 열기 제한).");
+  else flash("btnSave","저장됨");
+};
+$("btnLoad").onclick=()=>{
+  const raw=store.get("bc_profile");
+  if(!raw){flash("btnLoad","없음");return;}
+  try{
+    const d=JSON.parse(raw);
+    FIELDS.forEach(f=>{if(d[f]!==undefined)$(f).value=d[f];});
+    if(d.useSpin!==undefined)$("useSpin").checked=d.useSpin;
+    if(d.useCor!==undefined)$("useCor").checked=d.useCor;
+    calc();
+  }catch(e){flash("btnLoad","오류");}
+};
+$("btnCalc").onclick=calc;
+FIELDS.forEach(f=>$(f).addEventListener("change",calc));
+["useSpin","useCor"].forEach(f=>$(f).addEventListener("change",calc));
+});
+
+function calc(){
+  $("err").textContent="";
+  try{run();}catch(e){$("err").textContent="계산 오류: "+e.message;}
+}
+function run(){
+  const tC=num("temp"),pHPa=num("press"),rh=num("hum");
+  const rho=airDensity(tC,pHPa,rh),rhoR=rho/RHO_STD,sos=speedOfSound(tC),machFps=sos*FT;
+  $("airInfo").innerHTML=
+    `공기밀도 <b>${rho.toFixed(4)} kg/m³</b> · 표준대비 <b>${(rhoR*100).toFixed(1)}%</b> · 음속 <b>${sos.toFixed(1)} m/s</b>`;
+  const mvAdj=num("mv")+(num("mvt")||0)*(tC-15);
+  const v0=mvAdj*FT,bc=num("bc");
+  const tbl=$("drag").value==="G7"?G7:G1;
+  $("pillMode").textContent=$("drag").value;
+  if(!(bc>0))throw new Error("BC는 0보다 커야 합니다");
+  if(!(v0>0))throw new Error("총구속도를 확인하세요");
+  const shFt=(num("sh")/100)*FT,zeroM=num("zero"),maxR=num("maxr");
+  const stepM=Math.max(5,num("step"));
+  const base={v0,bc,tbl,rhoR,machFps,shFt,
+    latRad:num("lat")*Math.PI/180,azRad:num("az")*Math.PI/180};
+  const launchRad=findZero(base,zeroM*FT);
+  if(launchRad===null)throw new Error(`영점거리 ${zeroM}m에 탄이 도달하지 못합니다`);
+  const wRad=num("wd")*Math.PI/180,ws=num("ws")*FT;
+  const wx=-ws*Math.cos(wRad),wz=-ws*Math.sin(wRad);
+  const samples=[];
+  for(let d=stepM;d<=maxR+1e-6;d+=stepM)samples.push(d);
+  if(!samples.includes(zeroM)&&zeroM<=maxR)samples.push(zeroM);
+  samples.sort((a,b)=>a-b);
+  const traj=integrate({...base,launchRad,lookRad:num("look")*Math.PI/180,
+    wx,wz,cor:$("useCor").checked,samples:samples.map(d=>d*FT)});
+  let sg=null;
+  if($("useSpin").checked){
+    const calIn=num("cal")/25.4;
+    const lenIn=$("blen").value?num("blen")/25.4:calIn*4.0;
+    const twIn=num("twist");
+    if(calIn>0&&twIn>0)sg=millerSG(num("wgt"),calIn,lenIn,twIn,v0,tC,pHPa);
+    if(!(sg>0))sg=1.8;
+  }
+  const twSign=parseInt($("twdir").value,10);
+  const tb=$("tb");tb.innerHTML="";
+  const massKg=num("wgt")*6.479891e-5;
+  let firstSub=null;
+  traj.forEach(p=>{
+    const rM=p.x/FT,dropM=p.y/FT;
+    const spinM=sg?twSign*spinDriftIn(sg,p.t)*0.0254:0;
+    const windM=p.z/FT+spinM;
+    const spd=Math.sqrt(p.vx*p.vx+p.vy*p.vy+p.vz*p.vz)/FT;
+    const mach=spd/sos,eJ=0.5*massKg*spd*spd;
+    const upMil=-dropM/rM*1000,upMoa=upMil*3.437747;
+    const latMil=-windM/rM*1000,latMoa=latMil*3.437747;
+    if(mach<1.2&&firstSub===null)firstSub=rM;
+    const tr=document.createElement("tr");
+    if(Math.abs(rM-zeroM)<0.5)tr.className="zero";
+    if(mach<1.2)tr.className+=" subsonic";
+    const lr=v=>(Math.abs(v)<0.005?"0.0":Math.abs(v).toFixed(1)+" "+(v>0?"R":"L"));
+    tr.innerHTML=`<td>${Math.round(rM)}</td><td class="sub">${(dropM*100).toFixed(1)}</td>`+
+      `<td>${upMil>=0?"+":""}${upMil.toFixed(2)}</td><td class="sub">${upMoa>=0?"+":""}${upMoa.toFixed(2)}</td>`+
+      `<td class="sub">${(windM*100).toFixed(1)}</td><td>${lr(-latMil)}</td><td class="sub">${lr(-latMoa)}</td>`+
+      `<td>${spd.toFixed(0)}</td><td class="sub">${mach.toFixed(2)}</td>`+
+      `<td class="sub">${p.t.toFixed(2)}</td><td class="sub">${eJ.toFixed(0)}</td>`;
+    tb.appendChild(tr);
+  });
+  $("sum").innerHTML=[["영점각",(launchRad*1000).toFixed(2)+" mrad"],
+    ["총구속도",mvAdj.toFixed(0)+" m/s"],["밀도비",(rhoR*100).toFixed(1)+"%"],
+    ["안정계수 SG",sg?sg.toFixed(2):"—"],["천음속 진입",firstSub?firstSub+" m":"—"],
+    ["횡풍성분",(Math.abs(num("ws")*Math.sin(wRad))).toFixed(1)+" m/s"]
+  ].map(c=>cell(c[0],c[1])).join("");
+  $("resultBox").style.display="";
+}
+
+/* ══════════ 도구 ══════════ */
+safeInit("도구",function(){
+$("tCalcW").onclick=()=>{$("tW").value=(num("tR")/1000*num("tM")).toFixed(2);};
+$("tCalcM").onclick=()=>{$("tM").value=(num("tW")/(num("tR")/1000)).toFixed(2);};
+$("tCalcR").onclick=()=>{$("tR").value=(num("tW")/num("tM")*1000).toFixed(0);};
+const UNITS={uMil:6400,uDeg:360,uMrad:2000*Math.PI,uMoa:21600};
+Object.keys(UNITS).forEach(id=>{
+  $(id).addEventListener("input",()=>{
+    const v=num(id);if(!isFinite(v))return;
+    const frac=v/UNITS[id];
+    Object.keys(UNITS).forEach(o=>{if(o!==id)$(o).value=(frac*UNITS[o]).toFixed(2);});
+  });
+});
+});
+
+safeInit("저격 초기계산",calc);
+if(!store.ok){
+  const b=document.createElement("div");
+  b.className="warnbox";
+  b.style.cssText="margin:0 12px 12px";
+  b.innerHTML="<b>저장 기능을 쓸 수 없는 환경입니다.</b> 계산은 모두 정상 동작하지만, "+
+    "창을 닫으면 사표와 프로파일이 사라집니다. 브라우저에서 직접 열거나 웹에 올리면 저장됩니다.";
+  document.querySelector(".wrap").appendChild(b);
+}
+
+/* ══════════ 오프라인 (Service Worker) ══════════ */
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>{
+    navigator.serviceWorker.register("sw.js").then(reg=>{
+      const mark=()=>{const v=$("ver");if(v){v.textContent="v1.3 · 오프라인";v.style.borderColor="var(--accent2)";v.style.color="var(--accent2)";}};
+      if(navigator.serviceWorker.controller)mark();
+      else reg.addEventListener("updatefound",()=>{
+        const w=reg.installing;
+        w&&w.addEventListener("statechange",()=>{if(w.state==="activated")mark();});
+      });
+    }).catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
