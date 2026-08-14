@@ -143,7 +143,7 @@ html.night .warnbox{background:rgba(255,120,90,.08);border-color:rgba(255,120,90
 
 <header>
   <div class="hrow">
-    <h1>사격제원 계산기</h1><span class="pill" id="ver">v1.3</span><span class="sp"></span>
+    <h1>사격제원 계산기</h1><span class="pill" id="ver">v1.4</span><span class="sp"></span>
     <button class="night-btn" id="btnNight">야간</button>
   </div>
   <div class="tabs">
@@ -270,20 +270,30 @@ html.night .warnbox{background:rgba(255,120,90,.08);border-color:rgba(255,120,90
     </section>
     <section>
       <h2>전이 제원</h2>
-      <div class="grid g3">
-        <div class="f"><label>편향 <span class="u">밀, 우+ 좌−</span></label><input id="q3def" type="number" inputmode="decimal" value="100"></div>
-        <div class="f"><label>거리증감 <span class="u">m, 증+ 감−</span></label><input id="q3rng" type="number" inputmode="decimal" value="200"></div>
+      <div class="grid g2">
+        <div class="f"><label>전이 기준선</label><select id="q3base">
+          <option value="gun" selected>포대 → 기록점 (자동 계산)</option>
+          <option value="otaz">관측소 → 기록점 OTAZ (직접 입력)</option></select></div>
+        <div class="f"><label>OTAZ <span class="u">기준선 직접입력 시</span></label>
+          <div style="display:flex;gap:6px">
+            <input id="q3otaz" type="number" inputmode="decimal" value="0">
+            <select id="q3otazu" style="flex:none;width:auto"><option value="mil" selected>밀</option><option value="deg">도</option></select>
+          </div></div>
+      </div>
+      <div class="grid g3" style="margin-top:10px">
+        <div class="f"><label>우로 <span class="u">m, 우+ 좌−</span></label><input id="q3lr" type="number" inputmode="decimal" value="200"></div>
+        <div class="f"><label>더하기 <span class="u">m, 증+ 감−</span></label><input id="q3ad" type="number" inputmode="decimal" value="200"></div>
         <div class="f"><label>상하 <span class="u">m, RP 기준</span></label><input id="q3v" type="number" inputmode="decimal" value="0"></div>
       </div>
       <div class="btnrow"><button class="act" data-calc="3">결과 산출</button></div>
       <div class="err" id="q3err"></div>
-      <div class="formula">포대→RP 방위각 A, 거리 D 를 먼저 구한 뒤
-새 방위각 = A + 편향(밀)
-새 거리   = D + 거리증감(m)
-표적좌표  = 포대 + 새거리 × (sin, cos 새방위각)
-표적표고  = RP 표고 + 상하</div>
-      <div class="warnbox">편향은 <b>포대–기록점 선 기준</b>으로 적용합니다. 관측자가 준 편향(OT선 기준)이라면
-        포대 기준으로 환산한 뒤 넣어야 합니다.</div>
+      <div class="formula">@ = tan⁻¹(우로 ÷ 더하기)
+θ = OTAZ + @
+R = √(우로² + 더하기²)
+표적X = RP X + R × sin θ      표적Y = RP Y + R × cos θ
+표적표고 = RP 표고 + 상하</div>
+      <div class="warnbox">우로·더하기는 <b>미터</b>입니다(밀 아님). 이동벡터를 만들어 기준선 방향으로 회전시켜 기록점에 더합니다.
+        관측자가 준 수정이면 <b>OTAZ(관측소→기록점 방위각)</b>를, 사격지휘소에서 낸 수정이면 포대 기준을 쓰세요.</div>
     </section>
     <div id="q3out"></div>
   </div>
@@ -849,24 +859,40 @@ function calcPolar(){
   ]);
 }
 
-// 3. 기록점전이법
+// 3. 기록점전이법 — 우로/더하기(m) 이동벡터를 기준선 방향으로 회전시켜 기록점에 더한다
+//    @ = tan⁻¹(우로÷더하기),  θ = OTAZ + @,  R = √(우로²+더하기²)
 function calcShift(){
   const rp=readPt("q3rx","q3ry"),gun=readPt("q3mx","q3my");
   if(!rp)throw new Error("기록점 좌표를 확인하세요");
   if(!gun)throw new Error("포대 좌표를 확인하세요");
   const base=polar(gun,rp);
   if(base.dist<1)throw new Error("포대와 기록점이 같은 위치입니다");
-  const dDef=num("q3def")||0,dRng=num("q3rng")||0,vert=num("q3v")||0;
-  const newAz=normMil(base.az+dDef);
-  const newDist=base.dist+dRng;
-  if(newDist<=0)throw new Error("거리증감 적용 후 사거리가 0 이하입니다");
-  const tgt=project(gun,newAz,newDist);
+
+  let otazMil,src;
+  if($("q3base").value==="gun"){otazMil=base.az;src="포대→기록점 자동";}
+  else{
+    const v=num("q3otaz");
+    if(!isFinite(v))throw new Error("OTAZ 를 입력하세요");
+    otazMil=$("q3otazu").value==="deg"?v*6400/360:v;
+    src="OTAZ 직접입력";
+  }
+  const lr=num("q3lr")||0,ad=num("q3ad")||0,vert=num("q3v")||0;
+  if(!lr&&!ad)throw new Error("우로 또는 더하기 값을 입력하세요");
+
+  const at=Math.atan2(lr,ad);
+  const th=otazMil/MIL_PER_RAD+at;
+  const R=Math.hypot(lr,ad);
+  const tgt={e:rp.e+R*Math.sin(th),n:rp.n+R*Math.cos(th)};
   const tgtH=(num("q3rh")||0)+vert;
+  const dg=r=>(r*180/Math.PI).toFixed(2);
+
   renderResult("q3out",gun,num("q3mh")||0,tgt,tgtH,[
-    `포대→RP : 방위각 ${base.az.toFixed(1)}밀 / 거리 ${base.dist.toFixed(1)}m`,
-    `새 방위각 = ${base.az.toFixed(1)} ${dDef>=0?"+":"−"} ${Math.abs(dDef)} = ${newAz.toFixed(1)} 밀`,
-    `새 거리   = ${base.dist.toFixed(1)} ${dRng>=0?"+":"−"} ${Math.abs(dRng)} = ${newDist.toFixed(1)} m`,
-    `표적표고  = RP ${num("q3rh")||0} ${vert>=0?"+":"−"} ${Math.abs(vert)} = ${tgtH} m`
+    `기준선 OTAZ = ${otazMil.toFixed(1)}밀 = ${(otazMil*360/6400).toFixed(2)}도  (${src})`,
+    `@ = tan⁻¹(${lr} ÷ ${ad}) = ${dg(at)}도`,
+    `θ = ${(otazMil*360/6400).toFixed(2)} + ${dg(at)} = ${dg(th)}도`,
+    `R = √(${lr}² + ${ad}²) = ${R.toFixed(1)} m`,
+    `표적 = RP + R×(sin θ, cos θ) = (${tgt.e.toFixed(1)}, ${tgt.n.toFixed(1)})`,
+    `표적표고 = RP ${num("q3rh")||0} ${vert>=0?"+":"−"} ${Math.abs(vert)} = ${tgtH} m`
   ]);
 }
 
@@ -1121,7 +1147,7 @@ if(!store.ok){
 if("serviceWorker" in navigator){
   window.addEventListener("load",()=>{
     navigator.serviceWorker.register("sw.js").then(reg=>{
-      const mark=()=>{const v=$("ver");if(v){v.textContent="v1.3 · 오프라인";v.style.borderColor="var(--accent2)";v.style.color="var(--accent2)";}};
+      const mark=()=>{const v=$("ver");if(v){v.textContent="v1.4 · 오프라인";v.style.borderColor="var(--accent2)";v.style.color="var(--accent2)";}};
       if(navigator.serviceWorker.controller)mark();
       else reg.addEventListener("updatefound",()=>{
         const w=reg.installing;
