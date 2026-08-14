@@ -143,12 +143,13 @@ html.night .warnbox{background:rgba(255,120,90,.08);border-color:rgba(255,120,90
 
 <header>
   <div class="hrow">
-    <h1>사격제원 계산기</h1><span class="pill" id="ver">v1.4</span><span class="sp"></span>
+    <h1>사격제원 계산기</h1><span class="pill" id="ver">v1.5</span><span class="sp"></span>
     <button class="night-btn" id="btnNight">야간</button>
   </div>
   <div class="tabs">
     <button data-p="mortar" class="on">박격포</button>
     <button data-p="sniper">저격</button>
+    <button data-p="formula">공식</button>
     <button data-p="tools">도구</button>
   </div>
 </header>
@@ -465,6 +466,77 @@ R = √(우로² + 더하기²)
 </section>
 </div>
 
+
+<!-- ══════════════ 공식 ══════════════ -->
+<div class="page" id="p-formula">
+<section>
+  <h2>보정 공식</h2>
+  <div class="note" style="margin:0 0 12px">
+    사표가 개정되거나 부대 보정식이 바뀌면 여기에 식을 넣어 두세요.
+    <b>적용 대상</b>을 고르면 박격포 사격제원 계산에 자동으로 반영됩니다.
+  </div>
+  <div id="fList"></div>
+  <div class="btnrow">
+    <button class="ghost" id="fAdd" style="flex:1">+ 공식 추가</button>
+    <button class="ghost" id="fSave">저장</button>
+  </div>
+  <div class="ok" id="fMsg"></div>
+</section>
+
+<section id="fVarBox" style="display:none">
+  <h2>내 값</h2>
+  <div class="note" style="margin:0 0 12px">
+    식에 쓴 이름 중 아래 변수표에 없는 것은 여기 자동으로 나타납니다. 값을 채우면 계산에 쓰입니다.
+  </div>
+  <div class="grid g3" id="fVars"></div>
+</section>
+
+<section>
+  <h2>쓸 수 있는 변수</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>이름</th><th>뜻</th><th>단위</th><th>사거리식</th></tr></thead>
+    <tbody>
+      <tr><td>D</td><td class="sub">수평거리 (보정 전)</td><td class="sub">m</td><td>O</td></tr>
+      <tr><td>RANGE</td><td class="sub">사표 조회에 쓴 사거리</td><td class="sub">m</td><td class="sub">—</td></tr>
+      <tr><td>AZ</td><td class="sub">사격방위각</td><td class="sub">밀</td><td>O</td></tr>
+      <tr><td>DH</td><td class="sub">표고차 (표적 − 포대)</td><td class="sub">m</td><td>O</td></tr>
+      <tr><td>SITE</td><td class="sub">복각</td><td class="sub">밀</td><td>O</td></tr>
+      <tr><td>SLANT</td><td class="sub">경사거리</td><td class="sub">m</td><td>O</td></tr>
+      <tr><td>EL</td><td class="sub">사표 보간 고각</td><td class="sub">밀</td><td class="sub">—</td></tr>
+      <tr><td>ELEV</td><td class="sub">사각 포함 고각</td><td class="sub">밀</td><td class="sub">—</td></tr>
+      <tr><td>TOF</td><td class="sub">비행시간</td><td class="sub">초</td><td class="sub">—</td></tr>
+      <tr><td>DRIFT</td><td class="sub">편류</td><td class="sub">밀</td><td class="sub">—</td></tr>
+      <tr><td>DEF</td><td class="sub">편각</td><td class="sub">밀</td><td class="sub">—</td></tr>
+      <tr><td>MX MY MH</td><td class="sub">포대 X · Y · 표고</td><td class="sub">m</td><td>O</td></tr>
+      <tr><td>TX TY TH</td><td class="sub">표적 X · Y · 표고</td><td class="sub">m</td><td>O</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note"><b>사거리식</b> 칸이 O 인 변수만 「사거리 +」 공식에서 쓸 수 있습니다.
+    사거리 보정은 사표를 찾기 <b>전에</b> 적용되므로, 그때는 고각·비행시간이 아직 없습니다.</div>
+</section>
+
+<section>
+  <h2>쓸 수 있는 함수</h2>
+  <div class="formula" style="white-space:normal;line-height:2">
+    <b style="color:var(--fg)">삼각</b>  sin cos tan (라디안) · sind cosd tand (도) · sinm cosm tanm (밀)<br>
+    <b style="color:var(--fg)">역삼각</b>  asin acos atan · atand (→도) · atanm (→밀) · atan2(y,x) · atan2m(ΔX,ΔY) (→밀 0~6400)<br>
+    <b style="color:var(--fg)">수학</b>  sqrt abs sign min max floor ceil ln log exp pow(a,b) hypot<br>
+    <b style="color:var(--fg)">반올림</b>  round(x) · round(x, 단위) — round(1237, 5) = 1235<br>
+    <b style="color:var(--fg)">조건</b>  if(조건, 참일때, 거짓일때) · 비교 &lt; &gt; &lt;= &gt;= == !=<br>
+    <b style="color:var(--fg)">변환</b>  mil2deg deg2mil · norm(x) 0~6400 정규화 · clamp(x,최소,최대) · lerp(a,b,t)<br>
+    <b style="color:var(--fg)">상수</b>  PI · E · MIL (1018.5916) · CIRC (6400) · D2M (17.7778)<br>
+    <b style="color:var(--fg)">연산</b>  + − * / % ^ 괄호
+  </div>
+  <div class="warnbox">
+    <b>예시</b><br>
+    약온 보정 &nbsp;<code>if(T &gt; 15, (T - 15) * K, 0)</code> — 적용 대상 「사거리 +」<br>
+    고각 상수 보정 &nbsp;<code>SITE * 0.12</code> — 「고각 +」<br>
+    거리별 편류 &nbsp;<code>-DRIFT * D / 3000</code> — 「편각 +」<br>
+    확인용 &nbsp;<code>atan2m(TX - MX, TY - MY)</code> — 「표시만」
+  </div>
+</section>
+</div>
+
 <!-- ══════════════ 도구 ══════════════ -->
 <div class="page" id="p-tools">
 <section>
@@ -740,6 +812,15 @@ function renderResult(outId,gun,gunH,tgt,tgtH,steps){
   const siteMil=Math.atan2(dH,gt.dist)*MIL_PER_RAD;
   const slant=Math.hypot(gt.dist,dH);
 
+  // 보정 공식 — 사거리 보정은 사표를 찾기 전에 적용해야 한다
+  const fnotes=[];
+  const ctx={D:gt.dist,AZ:gt.az,DH:dH,SITE:siteMil,SLANT:slant,
+             MX:gun.e,MY:gun.n,MH:gunH,TX:tgt.e,TY:tgt.n,TH:tgtH,
+             RANGE:null,EL:null,ELEV:null,TOF:null,DRIFT:null,DEF:null};
+  const rangeAdj=(typeof applyFormulas==="function")?applyFormulas("range",gt.dist,ctx,fnotes):0;
+  const useRange=gt.dist+rangeAdj;
+  ctx.RANGE=useRange;
+
   let html=`<section><h2>결과 산출</h2>
     <div class="summary">
       ${cell("표적 X",Math.round(tgt.e))}
@@ -747,6 +828,7 @@ function renderResult(outId,gun,gunH,tgt,tgtH,steps){
       ${cell("격자좌표",toGrid(tgt.e)+toGrid(tgt.n))}
       ${cell("ΔX / ΔY",Math.round(gt.dE)+" / "+Math.round(gt.dN))}
       ${cell("수평거리",Math.round(gt.dist)+" m")}
+      ${rangeAdj?cell("보정 사거리",Math.round(useRange)+" m"):""}
       ${cell("표고차",(dH>=0?"+":"")+Math.round(dH)+" m")}
       ${cell("사격방위각",Math.round(gt.az)+" 밀")}
       ${cell("방위각(도)",(gt.az*360/6400).toFixed(1)+"°")}
@@ -758,25 +840,35 @@ function renderResult(outId,gun,gunH,tgt,tgtH,steps){
 
   // ── 사표 → 편각·고각
   const rows=parseTable($("mTable").value);
-  const it=interpTable(rows,gt.dist);
+  const it=interpTable(rows,useRange);
   if(it.err){
     html+=`<section><h2>사격 제원</h2>
       <div class="warnbox"><b>${it.err}</b><br>
       편각·고각을 내려면 「사표 · 사격지휘 설정」에서 부대 사표를 등록하세요.
       위의 거리·방위각·표고차는 사표 없이도 정확합니다.</div>
       <div class="btnrow"><button class="ghost" style="flex:1" onclick="goScreen('m-table')">사표 등록하러 가기</button></div>
+      ${fnotes.length?`<div class="formula">적용된 보정 공식
+${fnotes.map(n=>(n.ok?"  · ":"  ✕ ")+n.txt).join("\n")}</div>`:""}
       </section>`;
   }else{
     const compF=num("mCompF")||0;
     const compMil=siteMil*compF;
     const totalSite=siteMil+compMil;
-    const finalElev=it.e+totalSite;
+    let finalElev=it.e+totalSite;
     const refAz=num("mRefAz")||0,refDef=num("mRefDef")||0;
     const dirSign=parseInt($("mDefDir").value,10);
     const rawDef=normMil(refDef+dirSign*(gt.az-refAz));
     const driftMil=it.d!==null?it.d:0;
-    const finalDef=normMil(rawDef-dirSign*driftMil);
+    const baseDef=normMil(rawDef-dirSign*driftMil);
     const chg=$("mChg").value||$("mChgName").value||"—";
+
+    // 사표 값이 나왔으므로 나머지 변수를 채우고 고각·편각 보정을 적용
+    ctx.EL=it.e; ctx.ELEV=finalElev; ctx.TOF=it.t; ctx.DRIFT=it.d; ctx.DEF=baseDef;
+    const elevAdj=(typeof applyFormulas==="function")?applyFormulas("elev",finalElev,ctx,fnotes):0;
+    const defAdj =(typeof applyFormulas==="function")?applyFormulas("def", baseDef, ctx,fnotes):0;
+    const showAdj=(typeof applyFormulas==="function")?applyFormulas("show",0,ctx,fnotes):0;
+    finalElev+=elevAdj;
+    const finalDef=normMil(baseDef+defAdj);
 
     html+=`<section><h2>사격 제원</h2>
       <div class="fire">
@@ -791,6 +883,8 @@ function renderResult(outId,gun,gunH,tgt,tgtH,steps){
        (콤플리멘터리 미적용 — 사표 계수 입력 시 반영)`}
 편각 = 기준편각 ${refDef} ${dirSign<0?"−":"+"} (방위각 ${Math.round(gt.az)} − 기준 ${refAz}) = ${Math.round(rawDef)} 밀${driftMil?`
        편류 ${driftMil.toFixed(1)}밀 보정 → ${Math.round(finalDef)} 밀`:""}</div>
+      ${fnotes.length?`<div class="formula" style="border-left-color:${fnotes.some(n=>!n.ok)?"var(--bad)":"var(--accent2)"}">적용된 보정 공식
+${fnotes.map(n=>(n.ok?"  · ":"  ✕ ")+n.txt).join("\n")}${rangeAdj?`\n  → 사거리 ${Math.round(gt.dist)} ${rangeAdj>=0?"+":"−"} ${Math.abs(Math.round(rangeAdj*10)/10)} = ${Math.round(useRange)} m 로 사표 조회`:""}${elevAdj?`\n  → 고각 ${(finalElev-elevAdj).toFixed(1)} ${elevAdj>=0?"+":"−"} ${Math.abs(elevAdj).toFixed(1)} = ${finalElev.toFixed(1)} 밀`:""}${defAdj?`\n  → 편각 ${Math.round(baseDef)} ${defAdj>=0?"+":"−"} ${Math.abs(Math.round(defAdj))} = ${Math.round(finalDef)} 밀`:""}</div>`:""}
       <div class="warnbox">편각 부호 규약과 편류 적용 방향은 부대 SOP마다 다를 수 있습니다.
         <b>알고 있는 제원으로 반드시 역검산</b>하세요.</div>
       </section>`;
@@ -991,7 +1085,10 @@ $("mDemoT").onclick=()=>{
 2500   865   24.1   24
 3000   838   25.0   27
 3500   815   25.8   30
-4000   800   26.5   33`;
+4000   800   26.5   33
+4500   788   27.1   36
+5000   778   27.6   39
+5500   770   28.0   42`;
   showTableInfo();
 };
 $("mTable").addEventListener("input",showTableInfo);
@@ -1118,6 +1215,281 @@ function run(){
   $("resultBox").style.display="";
 }
 
+
+/* ══════════ 보정 공식 엔진 (eval 미사용, 재귀하강 파서) ══════════ */
+
+const MILR=MIL_PER_RAD;
+const norm6400=normMil;
+
+const has=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
+const FCONST={PI:Math.PI,E:Math.E,MIL:MILR,CIRC:6400,D2M:6400/360};
+
+const FFN={
+  sin:a=>Math.sin(a[0]), cos:a=>Math.cos(a[0]), tan:a=>Math.tan(a[0]),
+  sind:a=>Math.sin(a[0]*Math.PI/180), cosd:a=>Math.cos(a[0]*Math.PI/180), tand:a=>Math.tan(a[0]*Math.PI/180),
+  sinm:a=>Math.sin(a[0]/MILR),        cosm:a=>Math.cos(a[0]/MILR),        tanm:a=>Math.tan(a[0]/MILR),
+  asin:a=>Math.asin(a[0]), acos:a=>Math.acos(a[0]), atan:a=>Math.atan(a[0]),
+  atand:a=>Math.atan(a[0])*180/Math.PI, atanm:a=>Math.atan(a[0])*MILR,
+  atan2:a=>Math.atan2(a[0],a[1]),
+  atan2m:a=>norm6400(Math.atan2(a[0],a[1])*MILR),
+  sqrt:a=>Math.sqrt(a[0]), abs:a=>Math.abs(a[0]), sign:a=>Math.sign(a[0]),
+  min:a=>Math.min(...a), max:a=>Math.max(...a),
+  round:a=>a.length>1?Math.round(a[0]/a[1])*a[1]:Math.round(a[0]),
+  floor:a=>Math.floor(a[0]), ceil:a=>Math.ceil(a[0]),
+  ln:a=>Math.log(a[0]), log:a=>Math.log10(a[0]), exp:a=>Math.exp(a[0]),
+  pow:a=>Math.pow(a[0],a[1]), hypot:a=>Math.hypot(...a),
+  if:a=>a[0]?a[1]:a[2],
+  mil2deg:a=>a[0]*360/6400, deg2mil:a=>a[0]*6400/360,
+  norm:a=>norm6400(a[0]),
+  clamp:a=>Math.min(Math.max(a[0],a[1]),a[2]),
+  lerp:a=>a[0]+(a[1]-a[0])*a[2]
+};
+const FN_ARITY={atan2:2,atan2m:2,pow:2,if:3,clamp:3,lerp:3};
+
+function tokenize(s){
+  const T=[]; let i=0;
+  const isD=c=>c>='0'&&c<='9';
+  while(i<s.length){
+    const c=s[i];
+    if(/\s/.test(c)){i++;continue;}
+    if(isD(c)||(c==='.'&&isD(s[i+1]))){
+      let j=i,dot=0;
+      while(j<s.length&&(isD(s[j])||(s[j]==='.'&&!dot++)))j++;
+      T.push({t:'num',v:parseFloat(s.slice(i,j)),p:i}); i=j; continue;
+    }
+    if(/[A-Za-z_]/.test(c)){
+      let j=i; while(j<s.length&&/[A-Za-z0-9_]/.test(s[j]))j++;
+      T.push({t:'id',v:s.slice(i,j),p:i}); i=j; continue;
+    }
+    const two=s.substr(i,2);
+    if(['<=','>=','==','!='].indexOf(two)>=0){T.push({t:'op',v:two,p:i});i+=2;continue;}
+    if('+-*/%^(),<>'.indexOf(c)>=0){T.push({t:'op',v:c,p:i});i++;continue;}
+    throw new Error(`${i+1}번째 글자 '${c}' 를 이해할 수 없습니다`);
+  }
+  return T;
+}
+
+function evalExpr(src,vars){
+  const T=tokenize(src);
+  if(!T.length)throw new Error("식이 비어 있습니다");
+  let p=0;
+  const peek=()=>T[p], next=()=>T[p++];
+  const isOp=v=>{const t=peek();return t&&t.t==='op'&&(Array.isArray(v)?v.indexOf(t.v)>=0:t.v===v);};
+
+  function cmp(){
+    let a=add();
+    if(isOp(['<','>','<=','>=','==','!='])){
+      const o=next().v,b=add();
+      return ({'<':a<b,'>':a>b,'<=':a<=b,'>=':a>=b,'==':a===b,'!=':a!==b})[o]?1:0;
+    }
+    return a;
+  }
+  function add(){let a=mul();while(isOp(['+','-'])){const o=next().v,b=mul();a=o==='+'?a+b:a-b;}return a;}
+  function mul(){
+    let a=un();
+    while(isOp(['*','/','%'])){
+      const o=next().v,b=un();
+      if(o==='/'){if(b===0)throw new Error("0 으로 나눌 수 없습니다");a/=b;}
+      else if(o==='%'){if(b===0)throw new Error("0 으로 나눌 수 없습니다");a%=b;}
+      else a*=b;
+    }
+    return a;
+  }
+  // 단항 부호는 거듭제곱보다 느슨하게 묶는다 (수학 관례: -2^2 = -4)
+  function un(){if(isOp(['-','+'])){const o=next().v,v=un();return o==='-'?-v:v;}return pw();}
+  function pw(){const a=prim();if(isOp('^')){next();return Math.pow(a,un());}return a;}
+  function prim(){
+    const t=next();
+    if(!t)throw new Error("식이 도중에 끝났습니다");
+    if(t.t==='num')return t.v;
+    if(t.t==='id'){
+      if(isOp('(')){
+        next(); const args=[];
+        if(!isOp(')')){args.push(cmp());while(isOp(',')){next();args.push(cmp());}}
+        if(!isOp(')'))throw new Error(`'${t.v}(' 에 닫는 괄호가 없습니다`);
+        next();
+        const f=has(FFN,t.v)?FFN[t.v]:null;
+        if(!f)throw new Error(`'${t.v}' 는 없는 함수입니다`);
+        const need=has(FN_ARITY,t.v)?FN_ARITY[t.v]:0;
+        if(need&&args.length!==need)throw new Error(`${t.v}() 는 인자가 ${need}개 필요합니다 (${args.length}개 받음)`);
+        if(!need&&args.length<1)throw new Error(`${t.v}() 에 인자가 없습니다`);
+        const r=f(args);
+        if(!isFinite(r))throw new Error(`${t.v}() 결과가 유효하지 않습니다`);
+        return r;
+      }
+      if(has(FCONST,t.v))return FCONST[t.v];
+      if(vars&&has(vars,t.v)){
+        const v=vars[t.v];
+        if(v===null||v===undefined||!isFinite(v))throw new Error(`'${t.v}' 값이 아직 없습니다`);
+        return v;
+      }
+      throw new Error(`'${t.v}' 가 무엇인지 모릅니다`);
+    }
+    if(t.v==='('){const v=cmp();if(!isOp(')'))throw new Error("닫는 괄호가 없습니다");next();return v;}
+    throw new Error(`'${t.v}' 는 여기 올 수 없습니다`);
+  }
+  const r=cmp();
+  if(p<T.length)throw new Error(`식 뒤에 '${T.slice(p).map(x=>x.v).join(' ')}' 가 남았습니다`);
+  if(!isFinite(r))throw new Error("결과가 숫자가 아닙니다");
+  return r;
+}
+
+/* 식에 쓰인 이름 중 내장/제공 변수가 아닌 것 = 사용자가 채워야 할 값 */
+function freeVars(src,provided){
+  let T;try{T=tokenize(src);}catch(e){return [];}
+  const out=[];
+  for(let i=0;i<T.length;i++){
+    const t=T[i];
+    if(t.t!=='id')continue;
+    if(T[i+1]&&T[i+1].t==='op'&&T[i+1].v==='(')continue;   // 함수 이름
+    if(has(FCONST,t.v))continue;
+    if(provided.indexOf(t.v)>=0)continue;
+    if(out.indexOf(t.v)<0)out.push(t.v);
+  }
+  return out;
+}
+
+/* ── 공식 저장·UI ── */
+const FKEY="mc_formulas", FVKEY="mc_fvars";
+const F_TARGETS={show:"표시만",range:"사거리 +",elev:"고각 +",def:"편각 +"};
+const F_PRE=["D","AZ","DH","SITE","SLANT","MX","MY","MH","TX","TY","TH"];
+const F_ALL=F_PRE.concat(["RANGE","EL","ELEV","TOF","DRIFT","DEF"]);
+let FORMULAS=[], FVARS={};
+
+function fLoad(){
+  try{FORMULAS=JSON.parse(store.get(FKEY))||[];}catch(e){FORMULAS=[];}
+  if(!Array.isArray(FORMULAS))FORMULAS=[];
+  try{FVARS=JSON.parse(store.get(FVKEY))||{};}catch(e){FVARS={};}
+  if(!FVARS||typeof FVARS!=="object")FVARS={};
+}
+function fStore(){
+  store.set(FKEY,JSON.stringify(FORMULAS));
+  store.set(FVKEY,JSON.stringify(FVARS));
+}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function fRender(){
+  const L=$("fList");
+  if(!FORMULAS.length){
+    L.innerHTML='<div class="note" style="margin:0">등록된 공식이 없습니다. 아래 「+ 공식 추가」를 누르세요.</div>';
+  }else{
+    L.innerHTML=FORMULAS.map((f,i)=>
+      '<div style="border:1px solid var(--line);border-radius:10px;padding:11px;margin-bottom:8px;background:var(--panel2)">'+
+        '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">'+
+          '<label class="row-chk" style="flex:none"><input type="checkbox" data-f="on" data-i="'+i+'"'+(f.on?" checked":"")+'> 적용</label>'+
+          '<input data-f="name" data-i="'+i+'" value="'+esc(f.name||"")+'" placeholder="공식 이름" style="flex:1;min-width:110px;font-family:inherit;font-size:14px">'+
+          '<select data-f="target" data-i="'+i+'" style="flex:none;width:auto">'+
+            Object.keys(F_TARGETS).map(k=>'<option value="'+k+'"'+(f.target===k?" selected":"")+'>'+F_TARGETS[k]+'</option>').join("")+
+          '</select>'+
+          '<button class="ghost" data-f="del" data-i="'+i+'" style="flex:none;padding:7px 11px">삭제</button>'+
+        '</div>'+
+        '<input data-f="expr" data-i="'+i+'" value="'+esc(f.expr||"")+'" placeholder="예: if(T > 15, (T - 15) * K, 0)" spellcheck="false">'+
+        '<div style="font-size:12px;margin-top:7px;font-family:var(--mono)" id="fchk'+i+'"></div>'+
+      '</div>').join("");
+  }
+  fSyncVars();
+  FORMULAS.forEach((f,i)=>fCheck(i));
+}
+
+/* 식에 쓰인 미지 이름을 모아 입력칸을 만든다 */
+function fSyncVars(){
+  const need=[];
+  FORMULAS.forEach(f=>{
+    const scope=f.target==="range"?F_PRE:F_ALL;
+    freeVars(f.expr||"",scope).forEach(v=>{if(need.indexOf(v)<0)need.push(v);});
+  });
+  const box=$("fVarBox"), g=$("fVars");
+  if(!need.length){box.style.display="none";g.innerHTML="";return;}
+  box.style.display="";
+  g.innerHTML=need.map(v=>
+    '<div class="f"><label>'+esc(v)+'</label>'+
+    '<input data-fv="'+esc(v)+'" type="number" inputmode="decimal" value="'+
+    (FVARS[v]!==undefined?esc(FVARS[v]):"")+'" placeholder="값"></div>').join("");
+}
+
+/* 샘플값으로 즉시 문법·결과 확인 */
+function fCheck(i){
+  const el=$("fchk"+i); if(!el)return;
+  const f=FORMULAS[i];
+  if(!f.expr||!f.expr.trim()){el.textContent="";return;}
+  const sample={D:3000,RANGE:3000,AZ:1200,DH:50,SITE:17,SLANT:3000.4,
+    EL:900,ELEV:917,TOF:24,DRIFT:26,DEF:2200,
+    MX:12300,MY:45600,MH:100,TX:14500,TY:48900,TH:150};
+  const scope=f.target==="range"?F_PRE:F_ALL;
+  const vars=Object.create(null);
+  scope.forEach(k=>{vars[k]=sample[k];});
+  freeVars(f.expr,scope).forEach(v=>{
+    vars[v]=(FVARS[v]!==undefined&&FVARS[v]!=="")?parseFloat(FVARS[v]):null;
+  });
+  try{
+    const r=evalExpr(f.expr,vars);
+    el.style.color="var(--accent2)";
+    el.textContent="샘플 계산 → "+(Math.round(r*100)/100)+(f.target==="show"?"":"  ("+F_TARGETS[f.target]+")");
+  }catch(e){
+    el.style.color="var(--bad)";
+    el.textContent="✕ "+e.message;
+  }
+}
+
+$("fAdd").onclick=()=>{
+  FORMULAS.push({name:"새 공식",target:"show",expr:"",on:false});
+  fRender();
+};
+$("fSave").onclick=()=>{
+  fStore();
+  $("fMsg").textContent=store.ok?"저장했습니다":"이 브라우저에서는 저장이 안 됩니다 (계산은 정상)";
+  setTimeout(()=>{$("fMsg").textContent="";},2000);
+};
+$("fList").addEventListener("input",ev=>{
+  const t=ev.target,k=t.getAttribute("data-f"),i=+t.getAttribute("data-i");
+  if(!k||isNaN(i))return;
+  if(k==="expr"){FORMULAS[i].expr=t.value;fCheck(i);fSyncVars();}
+  else if(k==="name")FORMULAS[i].name=t.value;
+});
+$("fList").addEventListener("change",ev=>{
+  const t=ev.target,k=t.getAttribute("data-f"),i=+t.getAttribute("data-i");
+  if(!k||isNaN(i))return;
+  if(k==="on")FORMULAS[i].on=t.checked;
+  else if(k==="target"){FORMULAS[i].target=t.value;fCheck(i);fSyncVars();}
+});
+$("fList").addEventListener("click",ev=>{
+  const t=ev.target;
+  if(t.getAttribute&&t.getAttribute("data-f")==="del"){
+    FORMULAS.splice(+t.getAttribute("data-i"),1);fRender();
+  }
+});
+$("fVars").addEventListener("input",ev=>{
+  const v=ev.target.getAttribute("data-fv");
+  if(!v)return;
+  FVARS[v]=ev.target.value;
+  FORMULAS.forEach((f,i)=>fCheck(i));
+});
+
+/* 계산에 적용 — 실패한 식은 건너뛰고 사유를 남긴다 */
+function applyFormulas(target,base,ctx,notes){
+  let total=0;
+  FORMULAS.forEach(f=>{
+    if(!f.on||f.target!==target||!f.expr||!f.expr.trim())return;
+    const scope=target==="range"?F_PRE:F_ALL;
+    const vars=Object.create(null);
+    scope.forEach(k=>{vars[k]=ctx[k];});
+    freeVars(f.expr,scope).forEach(v=>{
+      vars[v]=(FVARS[v]!==undefined&&FVARS[v]!=="")?parseFloat(FVARS[v]):null;
+    });
+    try{
+      const r=evalExpr(f.expr,vars);
+      total+=r;
+      notes.push({ok:true,txt:(f.name||"공식")+" : "+(r>=0?"+":"")+(Math.round(r*100)/100)});
+    }catch(e){
+      notes.push({ok:false,txt:(f.name||"공식")+" ✕ "+e.message});
+    }
+  });
+  return total;
+}
+function activeCount(t){return FORMULAS.filter(f=>f.on&&f.target===t&&f.expr&&f.expr.trim()).length;}
+
+safeInit("공식",function(){fLoad();fRender();});
+
 /* ══════════ 도구 ══════════ */
 safeInit("도구",function(){
 $("tCalcW").onclick=()=>{$("tW").value=(num("tR")/1000*num("tM")).toFixed(2);};
@@ -1147,7 +1519,7 @@ if(!store.ok){
 if("serviceWorker" in navigator){
   window.addEventListener("load",()=>{
     navigator.serviceWorker.register("sw.js").then(reg=>{
-      const mark=()=>{const v=$("ver");if(v){v.textContent="v1.4 · 오프라인";v.style.borderColor="var(--accent2)";v.style.color="var(--accent2)";}};
+      const mark=()=>{const v=$("ver");if(v){v.textContent="v1.5 · 오프라인";v.style.borderColor="var(--accent2)";v.style.color="var(--accent2)";}};
       if(navigator.serviceWorker.controller)mark();
       else reg.addEventListener("updatefound",()=>{
         const w=reg.installing;

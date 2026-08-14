@@ -1,7 +1,7 @@
 /* 원시인 — 오프라인 캐시
    전부 캐시 우선(cache-first). 계산은 전부 기기 안에서 돌아가므로
    한 번 열어두면 네트워크 없이 완전히 동작한다. */
-const CACHE = "wonsiin-v1.4";
+const CACHE = "wonsiin-v1.5";
 const FILES = [
   "./", "./index.html", "./manifest.webmanifest",
   "./icon-180.png", "./icon-192.png", "./icon-512.png"
